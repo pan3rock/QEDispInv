@@ -1,0 +1,12 @@
+[submodule "external/fmt"]
+	path = external/fmt
+	url = https://github.com/fmtlib/fmt.git
+[submodule "external/toml11"]
+	path = external/toml11
+	url = https://github.com/ToruNiina/toml11.git
+[submodule "external/highfive"]
+	path = external/highfive
+	url = https://github.com/highfive-devs/highfive.git
+[submodule "external/LBFGSpp"]
+	path = external/LBFGSpp
+	url = https://github.com/yixuan/LBFGSpp.git
