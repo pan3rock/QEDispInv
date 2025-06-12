@@ -34,3 +34,25 @@ target_link_libraries(forward
     fmt::fmt-header-only
     toml11
 )
+
+add_executable(inversion
+    main_inversion.cc
+    problem.cc
+    model.cc
+)
+
+target_link_libraries(inversion
+    PRIVATE
+    disp
+    fmt::fmt-header-only
+    toml11
+    HighFive
+    lbfgspp
+)
+
+if (USE_OPENMP)
+target_link_libraries(inversion
+    PRIVATE
+    OpenMP::OpenMP_CXX
+)
+endif()

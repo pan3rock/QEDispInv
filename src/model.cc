@@ -2,24 +2,26 @@
 
 #include <Eigen/Dense>
 #include <fmt/format.h>
+#include <map>
 
 using namespace Eigen;
+using Dict = std::map<std::string, Eigen::ArrayXd>;
 
-Model::Model(const Eigen::Ref<const Eigen::ArrayXXd> model)
+Vs2Model::Vs2Model(const Eigen::Ref<const Eigen::ArrayXXd> model)
     : z_(model.col(1)), rho_(model.col(2)), vs_(model.col(3)),
       vp_(model.col(4)) {}
 
-Eigen::ArrayXd Model::z2depth(const std::vector<double> &z, int nl) {
+Eigen::ArrayXd Vs2Model::z2depth(const Eigen::ArrayXd &z, int nl) {
   ArrayXd dep(nl);
   dep(0) = 0.0;
   for (int i = 1; i < nl; ++i) {
-    dep(i) = z[i];
+    dep(i) = z(i);
   }
   return dep;
 }
 
-Eigen::ArrayXXd FixVpRho::generate(const std::vector<double> &z,
-                                   const std::vector<double> &vs) {
+Eigen::ArrayXXd FixVpRho::generate(const Eigen::ArrayXd &z,
+                                   const Eigen::ArrayXd &vs) {
   const int nl = vs.size();
   ArrayXd dep = z2depth(z, nl);
 
@@ -31,14 +33,14 @@ Eigen::ArrayXXd FixVpRho::generate(const std::vector<double> &z,
   model(0, 0) = 1;
   model(0, 1) = 0.0;
   model(0, 2) = rho_(0);
-  model(0, 3) = vs[0];
+  model(0, 3) = vs(0);
   model(0, 4) = vp_(0);
 
   int iloc = 0;
   for (int i = 1; i < nl; ++i) {
     model(i, 0) = i + 1;
     model(i, 1) = dep(i);
-    model(i, 3) = vs[i];
+    model(i, 3) = vs(i);
 
     // linear interpolation
     while (z_(iloc) < z_ref(i)) {
@@ -54,8 +56,21 @@ Eigen::ArrayXXd FixVpRho::generate(const std::vector<double> &z,
   return model;
 }
 
-Eigen::ArrayXXd Brocher05::generate(const std::vector<double> &z,
-                                    const std::vector<double> &vs) {
+Dict FixVpRho::derivative([[maybe_unused]] const Eigen::ArrayXd &vs) {
+  int nl = vs.rows();
+  ArrayXd drho = ArrayXd::Zero(nl);
+  ArrayXd dvp = ArrayXd::Zero(nl);
+  ArrayXd dvs = ArrayXd::Ones(nl);
+
+  Dict res;
+  res["rho"] = drho;
+  res["vp"] = dvp;
+  res["vs"] = dvs;
+  return res;
+}
+
+Eigen::ArrayXXd Brocher05::generate(const Eigen::ArrayXd &z,
+                                    const Eigen::ArrayXd &vs) {
   const int nl = vs.size();
   ArrayXd dep = z2depth(z, nl);
 
@@ -63,7 +78,7 @@ Eigen::ArrayXXd Brocher05::generate(const std::vector<double> &z,
   for (int i = 0; i < nl; ++i) {
     model(i, 0) = i + 1;
     model(i, 1) = dep(i);
-    model(i, 3) = vs[i];
+    model(i, 3) = vs(i);
     double vp = 0.9409 + 2.0947 * vs[i] - 0.8206 * pow(vs[i], 2) +
                 0.2683 * pow(vs[i], 3) - 0.0251 * pow(vs[i], 4);
     double rho = 1.6612 * vp - 0.4721 * pow(vp, 2) + 0.0671 * pow(vp, 3) -
@@ -74,8 +89,25 @@ Eigen::ArrayXXd Brocher05::generate(const std::vector<double> &z,
   return model;
 }
 
-Eigen::ArrayXXd NearSurface::generate(const std::vector<double> &z,
-                                      const std::vector<double> &vs) {
+Dict Brocher05::derivative(const Eigen::ArrayXd &vs) {
+  ArrayXd dvp = 2.0947 - 0.8206 * vs * 2 + 0.2683 * vs.pow(2) * 3 -
+                0.0251 * vs.pow(3) * 4;
+  ArrayXd vp = 0.9409 + 2.0947 * vs - 0.8206 * vs.pow(2) + 0.2683 * vs.pow(3) -
+               0.0251 * vs.pow(4);
+  ArrayXd drho = 1.6612 - 0.4721 * vp * 2 + 0.0671 * vp.pow(2) * 3 -
+                 0.0043 * vp.pow(3) * 4 + 0.000106 * vp.pow(4) * 5;
+  drho *= dvp;
+  ArrayXd dvs = ArrayXd::Ones(vs.rows());
+
+  Dict res;
+  res["rho"] = drho;
+  res["vp"] = dvp;
+  res["vs"] = dvs;
+  return res;
+}
+
+Eigen::ArrayXXd NearSurface::generate(const Eigen::ArrayXd &z,
+                                      const Eigen::ArrayXd &vs) {
   const int nl = vs.size();
   ArrayXd dep = z2depth(z, nl);
 
@@ -83,9 +115,22 @@ Eigen::ArrayXXd NearSurface::generate(const std::vector<double> &z,
   for (int i = 0; i < nl; ++i) {
     model(i, 0) = i + 1;
     model(i, 1) = dep(i);
-    model(i, 3) = vs[i];
+    model(i, 3) = vs(i);
     model(i, 4) = vp2vs_ * vs[i];
     model(i, 2) = alpha_ * pow(model(i, 4) * 1000.0, beta_);
   }
   return model;
+}
+
+Dict NearSurface::derivative(const Eigen::ArrayXd &vs) {
+  ArrayXd dvs = ArrayXd::Ones(vs.rows());
+  ArrayXd dvp = vp2vs_ * dvs;
+  ArrayXd vp = vp2vs_ * vs;
+  ArrayXd drho = alpha_ * beta_ * pow(1000.0 * vp, beta_ - 1.0) * 1000.0 * dvp;
+
+  Dict res;
+  res["rho"] = drho;
+  res["vp"] = dvp;
+  res["vs"] = dvs;
+  return res;
 }
