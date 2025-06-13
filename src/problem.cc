@@ -2,6 +2,7 @@
 #include "disp.hpp"
 #include "model.hpp"
 #include "swegn96.hpp"
+#include "timer.hpp"
 
 #include <Eigen/Dense>
 #include <fmt/format.h>
@@ -106,6 +107,23 @@ void DispersionCurves::update_matM_tr1() {
 
 void DispersionCurves::load_data(Data &data) {
   data_ = &data;
+  f_obs_.clear();
+  c_obs_.clear();
+  m_obs_.clear();
+
+  for (auto it = data.mode.begin(); it != data.mode.end(); ++it) {
+    int mode = *it;
+    if (weight_(mode) == 0.) {
+      continue;
+    }
+    std::vector<double> freq = data.freq[mode];
+    std::vector<double> c = data.c[mode];
+    std::vector<int> modes(freq.size(), mode);
+    f_obs_.insert(f_obs_.end(), freq.begin(), freq.end());
+    c_obs_.insert(c_obs_.end(), c.begin(), c.end());
+    m_obs_.insert(m_obs_.end(), modes.begin(), modes.end());
+  }
+
   num_forward_ = 0;
 }
 
@@ -124,35 +142,33 @@ int DispersionCurves::update_fitness(const VectorXd &x) {
   Dispersion disp(model, sh_);
   SwEgn96 se(model, sh_);
 
+  ArrayXd c_syn(f_obs_.size());
+#if defined(_OPENMP)
+#pragma omp parallel for
+#endif
+  for (size_t i = 0; i < f_obs_.size(); ++i) {
+    c_syn(i) = disp.search_mode(f_obs_[i], m_obs_[i]);
+  }
+
+  ArrayXi counts = ArrayXi::Zero(weight_.size());
+  for (size_t i = 0; i < f_obs_.size(); ++i) {
+    if (!std::isnan(c_syn(i)))
+      counts(m_obs_[i]) += 1;
+  }
+
   double f = 0.0;
   VectorXd grad = VectorXd::Zero(x.rows());
-  for (auto it = data_->mode.begin(); it != data_->mode.end(); ++it) {
-    int mode = *it;
-    if (weight_(mode) == 0.) {
-      continue;
+
+  for (size_t i = 0; i < f_obs_.size(); ++i) {
+    if (!std::isnan(c_syn(i))) {
+      int mode = m_obs_[i];
+      f += weight_(mode) / counts(mode) * std::pow(c_syn(i) - c_obs_[i], 2);
+      auto ker = se.kernel(f_obs_[i], c_syn(i));
+      grad += (2.0 * weight_(mode) / counts(mode) * (c_syn[i] - c_obs_[i]) *
+               (ker["rho"] * der["rho"] + ker["vs"] * der["vs"] +
+                ker["vp"] * der["vp"]))
+                  .matrix();
     }
-    std::vector<double> freq = data_->freq[mode];
-    std::vector<double> c_data = data_->c[mode];
-    ArrayXd fa = ArrayXd::Zero(freq.size());
-    ArrayXd c_syn = ArrayXd::Zero(freq.size());
-    ArrayXXd ga = ArrayXXd::Zero(nl_, freq.size());
-
-    int count_valid = 0;
-    for (size_t i = 0; i < freq.size(); ++i) {
-      double c_find = disp.search_mode(freq[i], mode);
-      if (!std::isnan(c_find)) {
-        fa(i) = weight_(mode) * std::pow(c_syn[i] - c_data[i], 2);
-
-        auto ker = se.kernel(freq[i], c_syn[i]);
-        ga.col(i) = 2.0 * weight_(mode) * (c_syn[i] - c_data[i]) *
-                    (ker["rho"] * der["rho"] + ker["vs"] * der["vs"] +
-                     ker["vp"] * der["vp"]);
-        ++count_valid;
-      }
-    }
-
-    f += fa.sum() / count_valid;
-    grad.array() += ga.rowwise().sum() / count_valid;
   }
 
   f += f_reg(x);

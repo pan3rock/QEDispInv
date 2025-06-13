@@ -61,13 +61,14 @@ private:
   const int nl_;
   const bool water_;
   Data *data_;
+  std::vector<double> f_obs_, c_obs_;
+  std::vector<int> m_obs_;
 
   std::deque<double> f_computed_;
   std::deque<Eigen::VectorXd> x_computed_, g_computed_;
   int num_forward_ = 0;
 
   const size_t max_deque_ = 10;
-  const int nfine_ = 5;
 };
 } // namespace lbfgspp
 #endif

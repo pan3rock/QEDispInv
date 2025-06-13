@@ -1,3 +1,7 @@
+add_library(timer
+    timer.cc
+)
+
 add_library(disp
     secfunc.cc
     disp.cc
@@ -48,6 +52,7 @@ target_link_libraries(inversion
     toml11
     HighFive
     lbfgspp
+    timer
 )
 
 if (USE_OPENMP)

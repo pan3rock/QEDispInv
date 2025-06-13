@@ -22,6 +22,8 @@
 
 #include "model.hpp"
 #include "problem.hpp"
+#include "timer.hpp"
+#include "tqdm.hpp"
 #include "utils.hpp"
 
 #include <CLI11.hpp>
@@ -61,11 +63,24 @@ int main(int argc, char const *argv[]) {
     file_mref = toml::find<std::string>(conf_inv, "model_ref");
   auto vs2model = toml::find<std::string>(conf_inv, "vs2model");
   const auto vs_width = toml::find<double>(conf_inv, "vs_width");
-  const auto lamb_vs = toml::find<double>(conf_inv, "lamb_vs");
+  const auto lamb_vs = toml::find<double>(conf_inv, "lambda");
   const auto rtype = toml::find<int>(conf_inv, "reg_type");
   const auto weight = toml::find<std::vector<double>>(conf_inv, "weight");
 
   ArrayXXd model_ref = loadtxt(file_mref);
+
+  ArrayXXd data_input = loadtxt(file_data);
+  Data data(data_input);
+  if (data_input.cols() < 4) {
+    const auto sigma = toml::find<std::vector<double>>(conf_inv, "sigma");
+    if (sigma.size() < weight.size()) {
+      std::string msg = fmt::format(
+          "the size of sigma ({:d}) is less than that of weight ({:d})",
+          sigma.size(), weight.size());
+      throw std::runtime_error(msg);
+    }
+    data.add_sigma(sigma);
+  }
 
   std::transform(vs2model.begin(), vs2model.end(), vs2model.begin(),
                  [](unsigned char c) { return std::tolower(c); });
@@ -100,9 +115,6 @@ int main(int argc, char const *argv[]) {
   ArrayXd lb = vs_min;
   ArrayXd ub = vs_max;
 
-  ArrayXXd data_input = loadtxt(file_data);
-  Data data(data_input);
-
   const int nl = model_ref.rows();
   std::random_device rd;
   std::mt19937 gen(rd());
@@ -120,30 +132,33 @@ int main(int argc, char const *argv[]) {
   const auto num_init = toml::find<int>(conf_inv, "num_init");
   const auto num_noise = toml::find<int>(conf_inv, "num_noise");
 
-  for (int i = 0; i < num_noise * num_init; ++i) {
-  }
+  std::vector<Data> data_noise;
   for (int i_d = 0; i_d < num_noise; ++i_d) {
     Data data_resampled = resample(data);
-    for (int i_m = 0; i_m < num_init; ++i_m) {
-      ArrayXd z_model = model_ref.col(1);
-      lbfgspp::DispersionCurves prob(z_model, vs_ref, pmodel, weight, lamb_vs,
-                                     sh, rtype);
-      VectorXd x = gen_rand_minit();
-      double feval = 0.0;
-      int num_iter;
-      try {
-        num_iter = solver.minimize(prob, x, feval, lb, ub);
-      } catch (const std::exception &exc) {
-        ;
-        // std::cerr << exc.what() << std::endl;
-      }
-    }
+    data_noise.push_back(data_resampled);
   }
 
-  Timer clock;
-  clock.tick();
-  clock.tock();
-  fmt::print("elasped time: {:.3f} s\n", clock.duration().count() / 1.0e3);
+  Tqdm bar;
+  int num_total = num_init * num_noise;
+  for (int i = 0; i < num_total; ++i) {
+    bar.progress(i, num_total);
+    int i_d = i / num_init;
+    auto data_resampled = data_noise[i_d];
+    ArrayXd z_model = model_ref.col(1);
+    lbfgspp::DispersionCurves prob(z_model, vs_ref, pmodel, weight, lamb_vs, sh,
+                                   rtype);
+    prob.load_data(data_resampled);
+    VectorXd x = gen_rand_minit();
+    double feval = 0.0;
+    int num_iter;
+    try {
+      num_iter = solver.minimize(prob, x, feval, lb, ub);
+    } catch (const std::exception &exc) {
+      ;
+      // std::cerr << exc.what() << std::endl;
+    }
+  }
+  bar.finish();
 
   return 0;
 }
