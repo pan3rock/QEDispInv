@@ -22,7 +22,6 @@
 
 #include "model.hpp"
 #include "problem.hpp"
-#include "timer.hpp"
 #include "tqdm.hpp"
 #include "utils.hpp"
 
@@ -31,6 +30,7 @@
 #include <LBFGSB.h>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
+#include <highfive/H5Easy.hpp>
 #include <random>
 #include <stdexcept>
 #include <string>
@@ -140,6 +140,9 @@ int main(int argc, char const *argv[]) {
 
   Tqdm bar;
   int num_total = num_init * num_noise;
+  std::vector<ArrayXd> z_inv, vs_inv;
+  std::vector<double> fitness;
+  std::vector<int> niter;
   for (int i = 0; i < num_total; ++i) {
     bar.progress(i, num_total);
     int i_d = i / num_init;
@@ -150,15 +153,38 @@ int main(int argc, char const *argv[]) {
     prob.load_data(data_resampled);
     VectorXd x = gen_rand_minit();
     double feval = 0.0;
-    int num_iter;
     try {
-      num_iter = solver.minimize(prob, x, feval, lb, ub);
+      int it = solver.minimize(prob, x, feval, lb, ub);
+      fitness.push_back(feval);
+      niter.push_back(it);
+      z_inv.push_back(z_model);
+      vs_inv.push_back(x);
     } catch (const std::exception &exc) {
-      ;
-      // std::cerr << exc.what() << std::endl;
+      std::cout << std::endl;
+      auto model = pmodel->generate(z_model, x);
+      std::cout << model << std::endl;
+      std::cerr << exc.what() << std::endl;
     }
   }
   bar.finish();
+
+  // hist of inversion model
+  const int num_hist = 100;
+  double vsmin = lb.minCoeff();
+  double vsmax = ub.maxCoeff();
+  const auto zmax = toml::find<double>(conf_inv, "zmax");
+  std::vector<double> z_samples, vs_samples;
+  ArrayXXd hist = compute_hist2d(z_inv, vs_inv, vsmin, vsmax, zmax, num_hist,
+                                 z_samples, vs_samples);
+
+  H5Easy::File out_h5(file_out, H5Easy::File::Overwrite);
+  H5Easy::dump(out_h5, "lb", lb);
+  H5Easy::dump(out_h5, "ub", ub);
+  H5Easy::dump(out_h5, "fitness", fitness);
+  H5Easy::dump(out_h5, "niter", niter);
+  H5Easy::dump(out_h5, "z_sample", z_samples);
+  H5Easy::dump(out_h5, "vs_sample", vs_samples);
+  H5Easy::dump(out_h5, "vs_hist2d", hist);
 
   return 0;
 }

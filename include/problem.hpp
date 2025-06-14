@@ -71,4 +71,10 @@ private:
   const size_t max_deque_ = 10;
 };
 } // namespace lbfgspp
+
+Eigen::ArrayXXd compute_hist2d(const std::vector<Eigen::ArrayXd> &z_inv,
+                               const std::vector<Eigen::ArrayXd> &vs_inv,
+                               double vsmin, double vsmax, double zmax,
+                               int num_hist, std::vector<double> &z_samples,
+                               std::vector<double> &vs_samples);
 #endif

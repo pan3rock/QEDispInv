@@ -2,7 +2,6 @@
 #include "disp.hpp"
 #include "model.hpp"
 #include "swegn96.hpp"
-#include "timer.hpp"
 
 #include <Eigen/Dense>
 #include <fmt/format.h>
@@ -244,3 +243,57 @@ Eigen::VectorXd DispersionCurves::g_reg(const Eigen::VectorXd &vs) {
 }
 
 } // namespace lbfgspp
+
+Eigen::ArrayXXd compute_hist2d(const std::vector<Eigen::ArrayXd> &z_inv,
+                               const std::vector<Eigen::ArrayXd> &vs_inv,
+                               double vsmin, double vsmax, double zmax,
+                               int num_hist, std::vector<double> &z_samples,
+                               std::vector<double> &vs_samples) {
+  double dz = zmax / (num_hist - 1);
+  double dvs = (vsmax - vsmin) / (num_hist - 1);
+
+  for (int i = 0; i < num_hist; ++i) {
+    z_samples.push_back(i * dz);
+    vs_samples.push_back(vsmin + i * dvs);
+  }
+
+  ArrayXXd hist2d = ArrayXXd::Zero(num_hist, num_hist);
+  int nl = z_inv[0].rows();
+  for (size_t n = 0; n < z_inv.size(); ++n) {
+    ArrayXd z = z_inv[n];
+    ArrayXd vs = vs_inv[n];
+    int i_z = 0;
+    for (int i = 0; i < nl; ++i) {
+      int i1_v = static_cast<int>(floor((vs(i) - vsmin) / dvs));
+
+      double zub;
+      if (i == nl - 1) {
+        zub = zmax;
+      } else {
+        zub = z(i + 1);
+      }
+
+      while (i_z * dz < zub) {
+        hist2d(i_z, i1_v) += 1;
+        ++i_z;
+      }
+      if (i != nl - 1) {
+        int i2_v = i1_v;
+        if (vs(i) < vs(i + 1)) {
+          while (vsmin + i2_v * dvs < vs(i + 1) && i2_v < num_hist) {
+            hist2d(i_z, i2_v) += 1;
+            ++i2_v;
+          }
+        } else {
+          while (vsmin + i2_v * dvs > vs(i + 1) && i2_v >= 0) {
+            hist2d(i_z, i2_v) += 1;
+            --i2_v;
+          }
+        }
+      }
+
+      i_z += 1;
+    }
+  }
+  return hist2d;
+}
