@@ -133,9 +133,13 @@ int main(int argc, char const *argv[]) {
   const auto num_noise = toml::find<int>(conf_inv, "num_noise");
 
   std::vector<Data> data_noise;
-  for (int i_d = 0; i_d < num_noise; ++i_d) {
-    Data data_resampled = resample(data);
-    data_noise.push_back(data_resampled);
+  if (num_noise == 1) {
+    data_noise.push_back(data);
+  } else {
+    for (int i_d = 0; i_d < num_noise; ++i_d) {
+      Data data_resampled = resample(data);
+      data_noise.push_back(data_resampled);
+    }
   }
 
   Tqdm bar;
@@ -143,6 +147,7 @@ int main(int argc, char const *argv[]) {
   std::vector<ArrayXd> z_inv, vs_inv;
   std::vector<double> fitness;
   std::vector<int> niter;
+  std::vector<ArrayXXd> disp_syn;
   for (int i = 0; i < num_total; ++i) {
     bar.progress(i, num_total);
     int i_d = i / num_init;
@@ -159,23 +164,38 @@ int main(int argc, char const *argv[]) {
       niter.push_back(it);
       z_inv.push_back(z_model);
       vs_inv.push_back(x);
-    } catch (const std::exception &exc) {
-      std::cout << std::endl;
       auto model = pmodel->generate(z_model, x);
-      std::cout << model << std::endl;
-      std::cerr << exc.what() << std::endl;
+      auto disp = prob.forward(model);
+      disp_syn.push_back(disp);
+    } catch (const std::exception &exc) {
+      // std::cout << std::endl;
+      // auto model = pmodel->generate(z_model, x);
+      // std::cout << model << std::endl;
+      // std::cerr << exc.what() << std::endl;
     }
   }
   bar.finish();
+
+  std::vector<size_t> idx_outlier = detect_outliers(fitness);
+  remove_by_indices(fitness, idx_outlier);
+  remove_by_indices(niter, idx_outlier);
+  remove_by_indices(z_inv, idx_outlier);
+  remove_by_indices(vs_inv, idx_outlier);
+  remove_by_indices(disp_syn, idx_outlier);
 
   // hist of inversion model
   const int num_hist = 100;
   double vsmin = lb.minCoeff();
   double vsmax = ub.maxCoeff();
   const auto zmax = toml::find<double>(conf_inv, "zmax");
-  std::vector<double> z_samples, vs_samples;
+  ArrayXd z_samples(num_hist), vs_samples(num_hist);
   ArrayXXd hist = compute_hist2d(z_inv, vs_inv, vsmin, vsmax, zmax, num_hist,
                                  z_samples, vs_samples);
+
+  ArrayXd vs_mean(num_hist), vs_mode(num_hist), vs_median(num_hist),
+      vs_cred10(num_hist), vs_cred90(num_hist);
+  compute_statistics(z_samples, vs_samples, hist, vs_mean, vs_median, vs_mode,
+                     vs_cred10, vs_cred90);
 
   H5Easy::File out_h5(file_out, H5Easy::File::Overwrite);
   H5Easy::dump(out_h5, "lb", lb);
@@ -185,6 +205,27 @@ int main(int argc, char const *argv[]) {
   H5Easy::dump(out_h5, "z_sample", z_samples);
   H5Easy::dump(out_h5, "vs_sample", vs_samples);
   H5Easy::dump(out_h5, "vs_hist2d", hist);
+  H5Easy::dump(out_h5, "data", data_input);
+  H5Easy::dump(out_h5, "vs_mean", vs_mean);
+  H5Easy::dump(out_h5, "vs_median", vs_median);
+  H5Easy::dump(out_h5, "vs_mode", vs_mode);
+  H5Easy::dump(out_h5, "vs_cred10", vs_cred10);
+  H5Easy::dump(out_h5, "vs_cred90", vs_cred90);
+
+  std::vector<int> mode_used;
+  for (size_t i = 0; i < weight.size(); ++i) {
+    if (weight[i] > 0) {
+      mode_used.push_back(i);
+    }
+  }
+  H5Easy::dump(out_h5, "mode_used", mode_used);
+
+  int num_valid = fitness.size();
+  H5Easy::dump(out_h5, "num_valid", num_valid);
+  for (int i = 0; i < num_valid; ++i) {
+    std::string key = fmt::format("disp/{:d}", i);
+    H5Easy::dump(out_h5, key, disp_syn[i]);
+  }
 
   return 0;
 }

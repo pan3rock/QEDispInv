@@ -75,6 +75,15 @@ private:
 Eigen::ArrayXXd compute_hist2d(const std::vector<Eigen::ArrayXd> &z_inv,
                                const std::vector<Eigen::ArrayXd> &vs_inv,
                                double vsmin, double vsmax, double zmax,
-                               int num_hist, std::vector<double> &z_samples,
-                               std::vector<double> &vs_samples);
+                               int num_hist, Eigen::ArrayXd &z_samples,
+                               Eigen::ArrayXd &vs_samples);
+
+void compute_statistics(const Eigen::ArrayXd &z, const Eigen::ArrayXd &vs,
+                        const Eigen::Ref<const Eigen::ArrayXXd> hist,
+                        Eigen::ArrayXd &vs_mean, Eigen::ArrayXd &vs_median,
+                        Eigen::ArrayXd &vs_mode, Eigen::ArrayXd &vs_cred10,
+                        Eigen::ArrayXd &vs_cred90);
+
+std::vector<size_t> detect_outliers(const std::vector<double> &fitness,
+                                    double multiplier = 1.5);
 #endif

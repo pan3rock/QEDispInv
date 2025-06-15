@@ -10,4 +10,13 @@ Eigen::ArrayXXd loadtxt(const std::string &file_model,
 
 std::vector<size_t> argsort(const Eigen::ArrayXd &x);
 
+std::vector<double> percentiles(const std::vector<double> &data,
+                                const std::vector<double> &ps);
+
+template <typename T>
+void remove_by_indices(std::vector<T> &data, std::vector<size_t> indices) {
+  for (size_t index : indices) {
+    data.erase(data.begin() + index);
+  }
+}
 #endif

@@ -2,6 +2,7 @@
 #include "disp.hpp"
 #include "model.hpp"
 #include "swegn96.hpp"
+#include "utils.hpp"
 
 #include <Eigen/Dense>
 #include <fmt/format.h>
@@ -198,26 +199,23 @@ DispersionCurves::forward(const Eigen::Ref<const Eigen::ArrayXXd> model) {
   std::vector<ArrayXd> list_disp;
   for (auto it = data_->mode.begin(); it != data_->mode.end(); ++it) {
     int mode = *it;
-    if (weight_(mode) == 0.) {
-      continue;
-    }
     std::vector<double> freq = data_->freq[mode];
     std::vector<double> c_data = data_->c[mode];
     for (size_t i = 0; i < freq.size(); ++i) {
       double c_find = disp.search_mode(freq[i], mode);
       if (!std::isnan(c_find)) {
-        ArrayXd d(4);
-        d << freq[i], c_find, c_data[i], static_cast<int>(mode);
+        ArrayXd d(3);
+        d << freq[i], c_find, static_cast<int>(mode);
         list_disp.push_back(d);
       }
     }
   }
 
-  ArrayXXd d4(list_disp.size(), 4);
+  ArrayXXd d3(list_disp.size(), 3);
   for (size_t i = 0; i < list_disp.size(); ++i) {
-    d4.row(i) = list_disp[i];
+    d3.row(i) = list_disp[i];
   }
-  return d4;
+  return d3;
 }
 
 Eigen::ArrayXXd DispersionCurves::x2model(const Eigen::VectorXd &vs) {
@@ -247,15 +245,13 @@ Eigen::VectorXd DispersionCurves::g_reg(const Eigen::VectorXd &vs) {
 Eigen::ArrayXXd compute_hist2d(const std::vector<Eigen::ArrayXd> &z_inv,
                                const std::vector<Eigen::ArrayXd> &vs_inv,
                                double vsmin, double vsmax, double zmax,
-                               int num_hist, std::vector<double> &z_samples,
-                               std::vector<double> &vs_samples) {
+                               int num_hist, Eigen::ArrayXd &z_samples,
+                               Eigen::ArrayXd &vs_samples) {
   double dz = zmax / (num_hist - 1);
   double dvs = (vsmax - vsmin) / (num_hist - 1);
 
-  for (int i = 0; i < num_hist; ++i) {
-    z_samples.push_back(i * dz);
-    vs_samples.push_back(vsmin + i * dvs);
-  }
+  z_samples = ArrayXd::LinSpaced(num_hist, 0, zmax);
+  vs_samples = ArrayXd::LinSpaced(num_hist, vsmin, vsmax);
 
   ArrayXXd hist2d = ArrayXXd::Zero(num_hist, num_hist);
   int nl = z_inv[0].rows();
@@ -273,27 +269,103 @@ Eigen::ArrayXXd compute_hist2d(const std::vector<Eigen::ArrayXd> &z_inv,
         zub = z(i + 1);
       }
 
-      while (i_z * dz < zub) {
+      while (i_z * dz <= zub) {
         hist2d(i_z, i1_v) += 1;
         ++i_z;
       }
-      if (i != nl - 1) {
-        int i2_v = i1_v;
-        if (vs(i) < vs(i + 1)) {
-          while (vsmin + i2_v * dvs < vs(i + 1) && i2_v < num_hist) {
-            hist2d(i_z, i2_v) += 1;
-            ++i2_v;
-          }
-        } else {
-          while (vsmin + i2_v * dvs > vs(i + 1) && i2_v >= 0) {
-            hist2d(i_z, i2_v) += 1;
-            --i2_v;
-          }
-        }
-      }
+      // if (i != nl - 1) {
+      //   int i2_v = i1_v;
+      //   if (vs(i) < vs(i + 1)) {
+      //     while (vsmin + i2_v * dvs < vs(i + 1) && i2_v < num_hist) {
+      //       hist2d(i_z, i2_v) += 1;
+      //       ++i2_v;
+      //     }
+      //   } else {
+      //     while (vsmin + i2_v * dvs > vs(i + 1) && i2_v >= 0) {
+      //       hist2d(i_z, i2_v) += 1;
+      //       --i2_v;
+      //     }
+      //   }
+      // }
 
-      i_z += 1;
+      // i_z += 1;
     }
   }
   return hist2d;
+}
+
+void compute_statistics(const Eigen::ArrayXd &z, const Eigen::ArrayXd &vs,
+                        const Eigen::Ref<const Eigen::ArrayXXd> hist,
+                        Eigen::ArrayXd &vs_mean, Eigen::ArrayXd &vs_median,
+                        Eigen::ArrayXd &vs_mode, Eigen::ArrayXd &vs_cred10,
+                        Eigen::ArrayXd &vs_cred90) {
+  const int n = vs.size();
+  for (int i_z = 0; i_z < z.rows(); ++i_z) {
+    const double total_weight = hist.row(i_z).sum();
+    if (total_weight <= 0) {
+      throw std::invalid_argument("Total weight must be positive");
+    }
+
+    ArrayXd hist1d = hist.row(i_z);
+    vs_mean(i_z) = (vs * hist1d).sum() / total_weight;
+
+    int max_idx = 0;
+    hist1d.maxCoeff(&max_idx);
+    vs_mode(i_z) = vs(max_idx);
+
+    Eigen::VectorXd cum_weights(n);
+    cum_weights(0) = hist1d(0);
+    for (int i = 1; i < n; ++i) {
+      cum_weights(i) = cum_weights(i - 1) + hist1d(i);
+    }
+
+    auto computeQuantile = [&](double quantile) -> double {
+      const double target_weight = total_weight * quantile;
+
+      int idx = 0;
+      while (idx < n && cum_weights(idx) < target_weight) {
+        idx++;
+      }
+
+      if (idx == 0) {
+        return vs(0);
+      } else if (idx == n) {
+        return vs(n - 1);
+      }
+
+      const double weight_before = cum_weights(idx - 1);
+      const double weight_here = cum_weights(idx);
+      const double x_before = vs(idx - 1);
+      const double x_here = vs(idx);
+
+      if (weight_here <= weight_before) {
+        return x_before;
+      }
+
+      const double t =
+          (target_weight - weight_before) / (weight_here - weight_before);
+      return x_before + t * (x_here - x_before);
+    };
+
+    vs_median(i_z) = computeQuantile(0.5);
+    vs_cred10(i_z) = computeQuantile(0.1);
+    vs_cred90(i_z) = computeQuantile(0.9);
+  }
+}
+
+std::vector<size_t> detect_outliers(const std::vector<double> &fitness,
+                                    double multiplier) {
+
+  std::vector<double> qs = percentiles(fitness, {25.0, 75.0});
+  double iqr = qs[1] - qs[0];
+  double lower_bound = qs[0] - multiplier * iqr;
+  double upper_bound = qs[1] + multiplier * iqr;
+  std::vector<size_t> find;
+  for (int i = fitness.size() - 1; i >= 0; --i) {
+    double f = fitness[i];
+    if (f < lower_bound or f > upper_bound) {
+      find.push_back(i);
+    }
+  }
+  return find;
 }

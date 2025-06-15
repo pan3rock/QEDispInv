@@ -26,7 +26,6 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <numeric>
 #include <vector>
 
@@ -86,4 +85,40 @@ std::vector<size_t> argsort(const Eigen::ArrayXd &v) {
               [&v](size_t i1, size_t i2) { return v[i1] < v[i2]; });
 
   return idx;
+}
+
+std::vector<double> percentiles(const std::vector<double> &data,
+                                const std::vector<double> &ps) {
+  if (data.size() == 0) {
+    throw std::invalid_argument("Data cannot be empty");
+  }
+
+  std::vector<double> sorted_data = data;
+  std::sort(sorted_data.begin(), sorted_data.end());
+
+  std::vector<double> results;
+  for (double p : ps) {
+    if (p < 0 || p > 100) {
+      throw std::invalid_argument("Percentiles must be between 0 and 100");
+    }
+
+    if (p == 100.0) {
+      results.push_back(sorted_data.back());
+      continue;
+    }
+
+    const double n = sorted_data.size();
+    const double pos = p * (n - 1) / 100.0;
+    const size_t k = static_cast<size_t>(pos);
+    const double f = pos - k;
+
+    if (k + 1 >= n) {
+      results.push_back(sorted_data[k]);
+    } else {
+      results.push_back(sorted_data[k] +
+                        f * (sorted_data[k + 1] - sorted_data[k]));
+    }
+  }
+
+  return results;
 }
