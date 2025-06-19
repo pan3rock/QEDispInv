@@ -60,4 +60,6 @@ private:
   const double beta_ = 0.25;
 };
 
+Eigen::ArrayXd generate_random_depth(int N, double zmax, double min_gap);
+
 #endif

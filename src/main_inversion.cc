@@ -131,6 +131,8 @@ int main(int argc, char const *argv[]) {
 
   const auto num_init = toml::find<int>(conf_inv, "num_init");
   const auto num_noise = toml::find<int>(conf_inv, "num_noise");
+  const auto rand_depth = toml::find<bool>(conf_inv, "rand_depth");
+  const auto dintv_min = toml::find<double>(conf_inv, "dintv_min");
 
   std::vector<Data> data_noise;
   if (num_noise == 1) {
@@ -139,6 +141,22 @@ int main(int argc, char const *argv[]) {
     for (int i_d = 0; i_d < num_noise; ++i_d) {
       Data data_resampled = resample(data);
       data_noise.push_back(data_resampled);
+    }
+  }
+
+  std::vector<ArrayXd> z_init, vs_init;
+  if (num_init == 1) {
+    z_init.push_back(model_ref.col(1));
+    vs_init.push_back(model_ref.col(3));
+  } else {
+    for (int i_m = 0; i_m < num_init; ++i_m) {
+      vs_init.push_back(gen_rand_minit());
+      if (rand_depth) {
+        z_init.push_back(
+            generate_random_depth(nl, model_ref(nl - 1, 1), dintv_min));
+      } else {
+        z_init.push_back(model_ref.col(1));
+      }
     }
   }
 
@@ -151,12 +169,14 @@ int main(int argc, char const *argv[]) {
   for (int i = 0; i < num_total; ++i) {
     bar.progress(i, num_total);
     int i_d = i / num_init;
+    int i_m = i % num_init;
     auto data_resampled = data_noise[i_d];
-    ArrayXd z_model = model_ref.col(1);
+    ArrayXd z_model = z_init[i_m];
     lbfgspp::DispersionCurves prob(z_model, vs_ref, pmodel, weight, lamb_vs, sh,
                                    rtype);
     prob.load_data(data_resampled);
-    VectorXd x = gen_rand_minit();
+
+    VectorXd x = vs_init[i_m];
     double feval = 0.0;
     try {
       int it = solver.minimize(prob, x, feval, lb, ub);

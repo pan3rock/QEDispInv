@@ -3,6 +3,7 @@
 #include <Eigen/Dense>
 #include <fmt/format.h>
 #include <map>
+#include <random>
 
 using namespace Eigen;
 using Dict = std::map<std::string, Eigen::ArrayXd>;
@@ -133,4 +134,62 @@ Dict NearSurface::derivative(const Eigen::ArrayXd &vs) {
   res["vp"] = dvp;
   res["vs"] = dvs;
   return res;
+}
+
+Eigen::ArrayXd generate_random_depth(int nl, double zmax, double min_gap) {
+  int N = nl - 1;
+  if (N < 2) {
+    throw std::invalid_argument("N must be at least 2");
+  }
+  if (min_gap <= 0) {
+    throw std::invalid_argument("min_gap must be positive");
+  }
+  if (min_gap * (N - 1) >= 1.0) {
+    throw std::invalid_argument("min_gap too large for given N");
+  }
+
+  std::random_device rd;
+  std::mt19937 rng(rd());
+  std::uniform_real_distribution<double> dist(0.0, 1.0);
+
+  double total_min_gap = min_gap * (N - 1);
+  double leftover = 1.0 - total_min_gap - 1e-9;
+
+  std::vector<double> increments(N - 1);
+  double sum = 0.0;
+  for (int i = 0; i < N - 1; ++i) {
+    increments[i] = dist(rng);
+    sum += increments[i];
+  }
+
+  if (sum > 0) {
+    for (int i = 0; i < N - 1; ++i) {
+      increments[i] = (increments[i] / sum) * leftover;
+    }
+  } else {
+    double avg_increment = leftover / (N - 1);
+    for (int i = 0; i < N - 1; ++i) {
+      increments[i] = avg_increment;
+    }
+  }
+
+  std::vector<double> sequence;
+  sequence.reserve(N);
+  sequence.push_back(0.0);
+
+  double current = 0.0;
+  for (int i = 0; i < N - 1; ++i) {
+    current += min_gap + increments[i];
+    sequence.push_back(current);
+  }
+
+  std::vector<double> depth;
+  for (int i = 0; i < N; ++i) {
+    depth.push_back(sequence[i] * zmax);
+  }
+  depth.push_back(zmax);
+
+  ArrayXd ret = Map<ArrayXd, Unaligned>(depth.data(), depth.size());
+
+  return ret;
 }

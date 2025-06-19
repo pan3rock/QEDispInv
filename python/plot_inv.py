@@ -126,7 +126,8 @@ def plot_model(
     ax.invert_yaxis()
     ax.set_xlabel("Vs (km/s)")
     ax.set_ylabel("Depth (km)")
-    ax.legend(loc="upper right")
+    # ax.legend(loc="upper right")
+    ax.legend()
     ax.grid(linestyle=":")
 
 
