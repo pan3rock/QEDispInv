@@ -12,9 +12,13 @@ public:
                                    const Eigen::ArrayXd &vs) = 0;
   virtual std::map<std::string, Eigen::ArrayXd>
   derivative(const Eigen::ArrayXd &vs) = 0;
+  Eigen::ArrayXd interp_vs(const Eigen::ArrayXd &z);
+  virtual void get_vs_limits(const Eigen::ArrayXd &z, double vs_width,
+                             Eigen::ArrayXd &vs_ref, Eigen::ArrayXd &lb,
+                             Eigen::ArrayXd &ub);
 
 protected:
-  Eigen::ArrayXd z2depth(const Eigen::ArrayXd &z, int nl);
+  Eigen::ArrayXd z2interpdepth(const Eigen::ArrayXd &z);
   Eigen::ArrayXd z_, rho_, vs_, vp_;
 };
 
@@ -25,6 +29,9 @@ public:
                            const Eigen::ArrayXd &vs) override;
   std::map<std::string, Eigen::ArrayXd>
   derivative(const Eigen::ArrayXd &vs) override;
+  void get_vs_limits(const Eigen::ArrayXd &z, double vs_width,
+                     Eigen::ArrayXd &vs_ref, Eigen::ArrayXd &lb,
+                     Eigen::ArrayXd &ub) override;
 
 private:
 };

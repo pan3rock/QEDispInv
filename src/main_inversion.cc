@@ -86,44 +86,17 @@ int main(int argc, char const *argv[]) {
                  [](unsigned char c) { return std::tolower(c); });
   std::shared_ptr<Vs2Model> pmodel;
   if (vs2model == "nearsurface") {
-    pmodel = std::make_shared<NearSurface>();
+    pmodel = std::make_shared<NearSurface>(model_ref);
   } else if (vs2model == "fixvprho") {
     pmodel = std::make_shared<FixVpRho>(model_ref);
   } else if (vs2model == "brocher05") {
-    pmodel = std::make_shared<Brocher05>();
+    pmodel = std::make_shared<Brocher05>(model_ref);
   } else {
     std::string msg = fmt::format(
         "invalid vs2model: {:s}, not in (NearSurface, FixVpRho, Brocher05)",
         vs2model);
     throw std::runtime_error(msg);
   }
-
-  // vs boundary
-  ArrayXd vs_ref = model_ref.col(3);
-  ArrayXd vs_min = vs_ref - vs_width / 2.0;
-  ArrayXd vs_max = vs_ref + vs_width / 2.0;
-  double tiny = 1.0e-2;
-  ArrayXd vp_ref = model_ref.col(4);
-  for (int i = 0; i < vs_min.rows(); ++i) {
-    if (vs_min(i) < tiny) {
-      vs_min(i) = tiny;
-    }
-    if (vs2model == "fixvprho" && vs_max(i) > vp_ref(i) - tiny) {
-      vs_max(i) = vp_ref(i) - tiny;
-    }
-  }
-  ArrayXd lb = vs_min;
-  ArrayXd ub = vs_max;
-
-  const int nl = model_ref.rows();
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::uniform_real_distribution<> dist(0.0, 1.0);
-  auto gen_rand_minit = [&]() -> ArrayXd {
-    ArrayXd rand = ArrayXd::NullaryExpr(nl, [&]() { return dist(gen); });
-    ArrayXd x = lb.array() + (ub - lb).array() * rand;
-    return x;
-  };
 
   LBFGSBParam<double> param;
   param.max_iterations = 100;
@@ -133,6 +106,8 @@ int main(int argc, char const *argv[]) {
   const auto num_noise = toml::find<int>(conf_inv, "num_noise");
   const auto rand_depth = toml::find<bool>(conf_inv, "rand_depth");
   const auto dintv_min = toml::find<double>(conf_inv, "dintv_min");
+  const auto nl = toml::find<int>(conf_inv, "nlayer");
+  const auto zmax = toml::find<double>(conf_inv, "zmax");
 
   std::vector<Data> data_noise;
   if (num_noise == 1) {
@@ -144,21 +119,47 @@ int main(int argc, char const *argv[]) {
     }
   }
 
-  std::vector<ArrayXd> z_init, vs_init;
+  std::vector<ArrayXd> z_init;
   if (num_init == 1) {
     z_init.push_back(model_ref.col(1));
-    vs_init.push_back(model_ref.col(3));
   } else {
     for (int i_m = 0; i_m < num_init; ++i_m) {
-      vs_init.push_back(gen_rand_minit());
       if (rand_depth) {
-        z_init.push_back(
-            generate_random_depth(nl, model_ref(nl - 1, 1), dintv_min));
+        z_init.push_back(generate_random_depth(nl, zmax, dintv_min));
       } else {
         z_init.push_back(model_ref.col(1));
       }
     }
   }
+
+  std::vector<ArrayXd> vs_ref, vs_lb, vs_ub;
+  for (int i_m = 0; i_m < num_init; ++i_m) {
+    ArrayXd z = z_init[i_m];
+    ArrayXd vsr(nl), lb(nl), ub(nl);
+    pmodel->get_vs_limits(z, vs_width, vsr, lb, ub);
+    vs_ref.push_back(vsr);
+    vs_lb.push_back(lb);
+    vs_ub.push_back(ub);
+  }
+
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_real_distribution<> dist(0.0, 1.0);
+  auto gen_rand_vsinit = [&](const ArrayXd &lb, const ArrayXd &ub) -> ArrayXd {
+    ArrayXd rand = ArrayXd::NullaryExpr(nl, [&]() { return dist(gen); });
+    ArrayXd x = lb.array() + (ub - lb).array() * rand;
+    return x;
+  };
+
+  std::vector<ArrayXd> vs_init;
+  if (num_init == 1) {
+    vs_init.push_back(model_ref.col(3));
+  } else {
+    for (int i_m = 0; i_m < num_init; ++i_m) {
+      vs_init.push_back(gen_rand_vsinit(vs_lb[i_m], vs_ub[i_m]));
+    }
+  }
+
   // for (size_t i = 0; i < z_init.size(); ++i) {
   //   auto z1 = z_init[i];
   //   auto vs1 = vs_init[i];
@@ -181,14 +182,14 @@ int main(int argc, char const *argv[]) {
     int i_m = i % num_init;
     auto data_resampled = data_noise[i_d];
     ArrayXd z_model = z_init[i_m];
-    lbfgspp::DispersionCurves prob(z_model, vs_ref, pmodel, weight, lamb_vs, sh,
-                                   rtype);
+    lbfgspp::DispersionCurves prob(z_model, vs_ref[i_m], pmodel, weight,
+                                   lamb_vs, sh, rtype);
     prob.load_data(data_resampled);
 
     VectorXd x = vs_init[i_m];
     double feval = 0.0;
     try {
-      int it = solver.minimize(prob, x, feval, lb, ub);
+      int it = solver.minimize(prob, x, feval, vs_lb[i_m], vs_ub[i_m]);
       fitness.push_back(feval);
       niter.push_back(it);
       z_inv.push_back(z_model);
@@ -214,9 +215,14 @@ int main(int argc, char const *argv[]) {
 
   // hist of inversion model
   const int num_hist = 100;
-  double vsmin = lb.minCoeff();
-  double vsmax = ub.maxCoeff();
-  const auto zmax = toml::find<double>(conf_inv, "zmax");
+  double vsmin = 1.0e10;
+  double vsmax = 0.0;
+  for (size_t i = 0; i < vs_lb.size(); ++i) {
+    double lbmin = vs_lb[i].minCoeff();
+    vsmin = std::min(lbmin, vsmin);
+    double ubmax = vs_ub[i].maxCoeff();
+    vsmax = std::max(ubmax, vsmax);
+  }
   ArrayXd z_samples(num_hist), vs_samples(num_hist);
   ArrayXXd hist = compute_hist2d(z_inv, vs_inv, vsmin, vsmax, zmax, num_hist,
                                  z_samples, vs_samples);
@@ -227,8 +233,6 @@ int main(int argc, char const *argv[]) {
                      vs_cred10, vs_cred90);
 
   H5Easy::File out_h5(file_out, H5Easy::File::Overwrite);
-  H5Easy::dump(out_h5, "lb", lb);
-  H5Easy::dump(out_h5, "ub", ub);
   H5Easy::dump(out_h5, "fitness", fitness);
   H5Easy::dump(out_h5, "niter", niter);
   H5Easy::dump(out_h5, "z_sample", z_samples);
