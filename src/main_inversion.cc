@@ -159,6 +159,15 @@ int main(int argc, char const *argv[]) {
       }
     }
   }
+  // for (size_t i = 0; i < z_init.size(); ++i) {
+  //   auto z1 = z_init[i];
+  //   auto vs1 = vs_init[i];
+  //   fmt::print("{:5d}{:5d}{:5d}\n", i, z1.rows(), vs1.rows());
+  //   for (int j = 0; j < z1.rows(); ++j) {
+  //     fmt::print("{:5d}{:12.5f}{:12.5f}\n", j, z1(j), vs1(j));
+  //   }
+  //   fmt::print("\n");
+  // }
 
   Tqdm bar;
   int num_total = num_init * num_noise;

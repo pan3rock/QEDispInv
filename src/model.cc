@@ -136,8 +136,8 @@ Dict NearSurface::derivative(const Eigen::ArrayXd &vs) {
   return res;
 }
 
-Eigen::ArrayXd generate_random_depth(int nl, double zmax, double min_gap) {
-  int N = nl - 1;
+Eigen::ArrayXd generate_random_depth(int N, double zmax, double min_gap_raw) {
+  double min_gap = min_gap_raw / zmax;
   if (N < 2) {
     throw std::invalid_argument("N must be at least 2");
   }
@@ -185,11 +185,11 @@ Eigen::ArrayXd generate_random_depth(int nl, double zmax, double min_gap) {
 
   std::vector<double> depth;
   for (int i = 0; i < N; ++i) {
-    depth.push_back(sequence[i] * zmax);
+    depth.push_back(sequence[i]);
   }
-  depth.push_back(zmax);
 
   ArrayXd ret = Map<ArrayXd, Unaligned>(depth.data(), depth.size());
+  ret *= zmax;
 
   return ret;
 }
