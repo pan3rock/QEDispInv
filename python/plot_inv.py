@@ -37,6 +37,7 @@ def main():
     z_sample = fh5["z_sample"][()]
     vs_sample = fh5["vs_sample"][()]
     vs_hist = fh5["vs_hist2d"][()]
+    vs_ref = fh5["vs_ref"][()]
     vs_mean = fh5["vs_mean"][()]
     vs_median = fh5["vs_median"][()]
     vs_mode = fh5["vs_mode"][()]
@@ -54,6 +55,7 @@ def main():
             z_sample,
             vs_sample,
             vs_hist,
+            vs_ref,
             vs_mean,
             vs_median,
             vs_mode,
@@ -62,7 +64,7 @@ def main():
             file_model_data,
         )
     if show_disp:
-        plot_disp(data, disp_syn, mode_used, show_full_disp)
+        plot_disp(data, disp_syn, fitness, mode_used, show_full_disp)
     if show_fitness:
         plot_fitness(fitness)
 
@@ -73,6 +75,7 @@ def plot_model(
     z_sample,
     vs_sample,
     vs_hist,
+    vs_ref,
     vs_mean,
     vs_median,
     vs_mode,
@@ -91,6 +94,30 @@ def plot_model(
         cmap="Wistia",
         alpha=0.8,
     )
+    ax.plot(vs_ref, z_sample, "k-", alpha=0.4, lw=2, label="Reference")
+
+    ax.plot(
+        vs_mean,
+        z_sample,
+        "-",
+        c="blue",
+        alpha=0.8,
+        lw=2,
+        label="Mean",
+    )
+    # ax.plot(vs_mode, z_samples, "--", c="tab:red", alpha=0.7, lw=2, label="Mode")
+
+    ax.plot(
+        vs_cred10,
+        z_sample,
+        "--",
+        c="blue",
+        dashes=(5, 5),
+        lw=1,
+        alpha=0.8,
+        label="10/90 percentile",
+    )
+    ax.plot(vs_cred90, z_sample, "k--", lw=1, alpha=0.6, dashes=(5, 5))
 
     if file_model_data:
         model_data = np.loadtxt(file_model_data)
@@ -99,28 +126,7 @@ def plot_model(
         if z[-1] < z_sample[-1]:
             z = np.append(z, z_sample[-1])
             vs = np.append(vs, vs[-1])
-        ax.step(vs, z, "-", c="tab:red", alpha=0.7, lw=2, label="Target")
-
-    ax.plot(
-        vs_mean,
-        z_sample,
-        "-",
-        c="k",
-        alpha=0.7,
-        lw=2,
-        label="Mean",
-    )
-    # ax.plot(vs_mode, z_samples, "--", c="tab:red", alpha=0.7, lw=2, label="Mode")
-    ax.plot(
-        vs_cred10,
-        z_sample,
-        "k--",
-        dashes=(5, 5),
-        lw=1,
-        alpha=0.6,
-        label="10/90 percentile",
-    )
-    ax.plot(vs_cred90, z_sample, "k--", lw=1, alpha=0.6, dashes=(5, 5))
+        ax.step(vs, z, "-", c="r", alpha=0.7, lw=2, label="Target")
 
     ax.set_ylim([0, z_sample[-1]])
     ax.invert_yaxis()
@@ -131,15 +137,19 @@ def plot_model(
     ax.grid(linestyle=":")
 
 
-def plot_disp(data, disp_syn, mode_used, show_full_disp):
+def plot_disp(data, disp_syn, fitness, mode_used, show_full_disp):
     if show_full_disp:
         mode_show = list(set(data[:, 2].astype(int)))
     else:
         mode_show = mode_used
 
+    val = 1.0 / fitness
+    alpha = val / np.amax(val) * 0.8
+
     fig, ax = plt.subplots(layout="constrained")
-    for disp in disp_syn:
-        p1 = plot_1disp(ax, disp, mode_show, "", "-", "k", 0.6)
+    for i, disp in enumerate(disp_syn):
+        plot_1disp(ax, disp, mode_show, "", "-", "k", alpha[i])
+    (p1,) = ax.plot([], [], "k-", alpha=0.8)
     p2 = plot_1disp(ax, data, mode_show, ".", "", "r", 0.8)
     ax.legend([p1, p2], ["inv", "data"], loc="upper right")
 

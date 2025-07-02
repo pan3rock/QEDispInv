@@ -74,8 +74,9 @@ private:
 
 Eigen::ArrayXXd compute_hist2d(const std::vector<Eigen::ArrayXd> &z_inv,
                                const std::vector<Eigen::ArrayXd> &vs_inv,
-                               double vsmin, double vsmax, double zmax,
-                               int num_hist, Eigen::ArrayXd &z_samples,
+                               const std::vector<double> &fitness, double vsmin,
+                               double vsmax, double zmax, int num_hist,
+                               Eigen::ArrayXd &z_samples,
                                Eigen::ArrayXd &vs_samples);
 
 void compute_statistics(const Eigen::ArrayXd &z, const Eigen::ArrayXd &vs,

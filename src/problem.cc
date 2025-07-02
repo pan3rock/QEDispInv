@@ -244,11 +244,16 @@ Eigen::VectorXd DispersionCurves::g_reg(const Eigen::VectorXd &vs) {
 
 Eigen::ArrayXXd compute_hist2d(const std::vector<Eigen::ArrayXd> &z_inv,
                                const std::vector<Eigen::ArrayXd> &vs_inv,
-                               double vsmin, double vsmax, double zmax,
-                               int num_hist, Eigen::ArrayXd &z_samples,
+                               const std::vector<double> &fitness, double vsmin,
+                               double vsmax, double zmax, int num_hist,
+                               Eigen::ArrayXd &z_samples,
                                Eigen::ArrayXd &vs_samples) {
   double dz = zmax / (num_hist - 1);
   double dvs = (vsmax - vsmin) / (num_hist - 1);
+
+  ArrayXd f_val = Map<const ArrayXd, Unaligned>(fitness.data(), fitness.size());
+  f_val = 1.0 / f_val;
+  f_val /= f_val.maxCoeff();
 
   z_samples = ArrayXd::LinSpaced(num_hist, 0, zmax);
   vs_samples = ArrayXd::LinSpaced(num_hist, vsmin, vsmax);
@@ -270,7 +275,7 @@ Eigen::ArrayXXd compute_hist2d(const std::vector<Eigen::ArrayXd> &z_inv,
       }
 
       while (i_z * dz <= zub) {
-        hist2d(i_z, i1_v) += 1;
+        hist2d(i_z, i1_v) += f_val[n];
         ++i_z;
       }
       // if (i != nl - 1) {

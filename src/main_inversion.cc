@@ -224,8 +224,8 @@ int main(int argc, char const *argv[]) {
     vsmax = std::max(ubmax, vsmax);
   }
   ArrayXd z_samples(num_hist), vs_samples(num_hist);
-  ArrayXXd hist = compute_hist2d(z_inv, vs_inv, vsmin, vsmax, zmax, num_hist,
-                                 z_samples, vs_samples);
+  ArrayXXd hist = compute_hist2d(z_inv, vs_inv, fitness, vsmin, vsmax, zmax,
+                                 num_hist, z_samples, vs_samples);
 
   ArrayXd vs_mean(num_hist), vs_mode(num_hist), vs_median(num_hist),
       vs_cred10(num_hist), vs_cred90(num_hist);
@@ -244,6 +244,11 @@ int main(int argc, char const *argv[]) {
   H5Easy::dump(out_h5, "vs_mode", vs_mode);
   H5Easy::dump(out_h5, "vs_cred10", vs_cred10);
   H5Easy::dump(out_h5, "vs_cred90", vs_cred90);
+
+  ArrayXXd model_mean = pmodel->generate(z_samples, vs_mean);
+  H5Easy::dump(out_h5, "model_mean", model_mean);
+  ArrayXd vs_ref_save = pmodel->interp_vs(z_samples);
+  H5Easy::dump(out_h5, "vs_ref", vs_ref_save);
 
   std::vector<int> mode_used;
   for (size_t i = 0; i < weight.size(); ++i) {
