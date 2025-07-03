@@ -96,16 +96,24 @@ def plot_model(
     )
     ax.plot(vs_ref, z_sample, "k-", alpha=0.4, lw=2, label="Reference")
 
+    # ax.plot(
+    #     vs_mean,
+    #     z_sample,
+    #     "-",
+    #     c="blue",
+    #     alpha=0.8,
+    #     lw=2,
+    #     label="Mean",
+    # )
     ax.plot(
-        vs_mean,
+        vs_median,
         z_sample,
         "-",
         c="blue",
         alpha=0.8,
         lw=2,
-        label="Mean",
+        label="Median",
     )
-    # ax.plot(vs_mode, z_samples, "--", c="tab:red", alpha=0.7, lw=2, label="Mode")
 
     ax.plot(
         vs_cred10,

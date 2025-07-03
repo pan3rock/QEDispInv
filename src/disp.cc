@@ -299,7 +299,7 @@ void Dispersion::locate_extremum(double f, const std::vector<double> &x,
       double f2 = y_tmp[i + 1];
       double f3 = y_tmp[i + 2];
       double xe_i = find_extremum(x1, x2, x3, f1, f2, f3);
-      if (xe_i < vs_hf_ && xe_i > 0.8 * vs_min_) {
+      if (xe_i < x3 && xe_i > x1) {
         x_ext.push_back(xe_i);
         y_ext.push_back(sf_->evaluate(f, xe_i));
       }
@@ -307,8 +307,8 @@ void Dispersion::locate_extremum(double f, const std::vector<double> &x,
     if (it == niter_ext_ - 1 || x_ext.size() < 3)
       break;
 
-    x_tmp = x_ext;
-    y_tmp = y_ext;
+    x_tmp.insert(x_tmp.end(), x_ext.begin(), x_ext.end());
+    y_tmp.insert(y_tmp.end(), y_ext.begin(), y_ext.end());
 
     std::vector<size_t> iasc(x_tmp.size());
     std::iota(iasc.begin(), iasc.end(), 0);

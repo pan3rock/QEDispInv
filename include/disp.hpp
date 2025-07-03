@@ -33,7 +33,7 @@ private:
 
   // parameters for intervals bracketing roots
   const int nbias_ = 2;
-  const int niter_ext_ = 2;
+  const int niter_ext_ = 3;
 
   const int nl_;
   Eigen::ArrayXd thk_, vs_, vp_;
