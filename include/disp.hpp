@@ -14,17 +14,15 @@ public:
   std::vector<double> search(double f, int num_mode);
   double search_mode(double f, int mode);
   std::vector<double> get_samples(double f);
-  std::vector<double> predict_extremum(double f,
-                                       const std::vector<double> &samples);
-  std::vector<std::pair<double, double>> find_coarse_intv(double f,
-                                                          int num_mode);
-  double approx(double f, double c);
-
-private:
-  double evaluate_rayleigh_velocity();
   void locate_extremum(double f, const std::vector<double> &x,
                        const std::vector<double> &y, std::vector<double> &x_ext,
                        std::vector<double> &y_ext);
+  double approx(double f, double c);
+
+private:
+  std::vector<std::pair<double, double>> find_coarse_intv(double f,
+                                                          int num_mode);
+  double evaluate_rayleigh_velocity();
 
   // parameters for initial samplings
   const double ednn_ = 0.50;

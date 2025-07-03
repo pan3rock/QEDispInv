@@ -260,27 +260,6 @@ double Dispersion::search_mode(double f, int mode) {
   }
 }
 
-std::vector<double>
-Dispersion::predict_extremum(double f, const std::vector<double> &samples) {
-  std::vector<double> fx;
-  for (size_t i = 0; i < samples.size(); ++i) {
-    fx.push_back(sf_->evaluate(f, samples[i]));
-  }
-
-  std::vector<double> xe;
-  for (size_t i = 0; i < samples.size() - 2; ++i) {
-    double x1 = samples[i];
-    double x2 = samples[i + 1];
-    double x3 = samples[i + 2];
-    double f1 = fx[i];
-    double f2 = fx[i + 1];
-    double f3 = fx[i + 2];
-    double x = find_extremum(x1, x2, x3, f1, f2, f3);
-    xe.push_back(x);
-  }
-  return xe;
-}
-
 void Dispersion::locate_extremum(double f, const std::vector<double> &x,
                                  const std::vector<double> &y,
                                  std::vector<double> &x_ext,

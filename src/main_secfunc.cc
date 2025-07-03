@@ -70,12 +70,30 @@ int main(int argc, char const *argv[]) {
 
   Dispersion disp(model, sh);
   auto samples = disp.get_samples(freq);
+  ArrayXd N(samples.size());
+  for (size_t i = 0; i < samples.size(); ++i) {
+    N(i) = disp.approx(freq, samples[i]);
+  }
+
+  std::vector<double> val(samples.size());
+  for (size_t i_c = 0; i_c < samples.size(); ++i_c) {
+    val[i_c] = sf.evaluate(freq, samples[i_c]);
+  }
+
+  std::vector<double> x_ext, y_ext;
+  disp.locate_extremum(freq, samples, val, x_ext, y_ext);
+
+  const int maxmode = 1000;
+  auto roots = disp.search(freq, maxmode);
 
   H5Easy::File fout(file_out, H5Easy::File::Overwrite);
   H5Easy::dump(fout, "f", freq);
   H5Easy::dump(fout, "c", c);
   H5Easy::dump(fout, "sfunc", sfunc);
   H5Easy::dump(fout, "samples", samples);
+  H5Easy::dump(fout, "samples_ext", x_ext);
+  H5Easy::dump(fout, "roots", roots);
+  H5Easy::dump(fout, "N", N);
 
   return 0;
 }
