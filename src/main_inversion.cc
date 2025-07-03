@@ -70,17 +70,6 @@ int main(int argc, char const *argv[]) {
   ArrayXXd model_ref = loadtxt(file_mref);
 
   ArrayXXd data_input = loadtxt(file_data);
-  Data data(data_input);
-  if (data_input.cols() < 4) {
-    const auto sigma = toml::find<std::vector<double>>(conf_inv, "sigma");
-    if (sigma.size() < weight.size()) {
-      std::string msg = fmt::format(
-          "the size of sigma ({:d}) is less than that of weight ({:d})",
-          sigma.size(), weight.size());
-      throw std::runtime_error(msg);
-    }
-    data.add_sigma(sigma);
-  }
 
   std::transform(vs2model.begin(), vs2model.end(), vs2model.begin(),
                  [](unsigned char c) { return std::tolower(c); });
@@ -106,8 +95,29 @@ int main(int argc, char const *argv[]) {
   const auto num_noise = toml::find<int>(conf_inv, "num_noise");
   const auto rand_depth = toml::find<bool>(conf_inv, "rand_depth");
   const auto dintv_min = toml::find<double>(conf_inv, "dintv_min");
-  const auto nl = toml::find<int>(conf_inv, "nlayer");
-  const auto zmax = toml::find<double>(conf_inv, "zmax");
+  auto zmax = toml::find<double>(conf_inv, "zmax");
+
+  int nl;
+  if (rand_depth) {
+    nl = toml::find<int>(conf_inv, "nlayer");
+  } else {
+    nl = model_ref.rows();
+    double zn = model_ref(nl - 1, 1);
+    if (zmax < zn)
+      zmax = zn;
+  }
+
+  Data data(data_input);
+  if (num_noise > 1 && data_input.cols() < 4) {
+    const auto sigma = toml::find<std::vector<double>>(conf_inv, "sigma");
+    if (sigma.size() < weight.size()) {
+      std::string msg = fmt::format(
+          "the size of sigma ({:d}) is less than that of weight ({:d})",
+          sigma.size(), weight.size());
+      throw std::runtime_error(msg);
+    }
+    data.add_sigma(sigma);
+  }
 
   std::vector<Data> data_noise;
   if (num_noise == 1) {
