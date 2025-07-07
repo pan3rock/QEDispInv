@@ -76,6 +76,10 @@ int main(int argc, char const *argv[]) {
   std::shared_ptr<Vs2Model> pmodel;
   if (vs2model == "nearsurface") {
     pmodel = std::make_shared<NearSurface>(model_ref);
+    const auto vs2vp = toml::find<double>(conf_inv, "vs2vp");
+    pmodel->set_param({vs2vp});
+  } else if (vs2model == "gardner") {
+    pmodel = std::make_shared<Gardner>(model_ref);
   } else if (vs2model == "fixvprho") {
     pmodel = std::make_shared<FixVpRho>(model_ref);
   } else if (vs2model == "brocher05") {
@@ -208,10 +212,10 @@ int main(int argc, char const *argv[]) {
       auto disp = prob.forward(model);
       disp_syn.push_back(disp);
     } catch (const std::exception &exc) {
-      // std::cout << std::endl;
-      // auto model = pmodel->generate(z_model, x);
-      // std::cout << model << std::endl;
-      // std::cerr << exc.what() << std::endl;
+      std::cout << std::endl;
+      auto model = pmodel->generate(z_model, x);
+      std::cout << model << std::endl;
+      std::cerr << exc.what() << std::endl;
     }
   }
   bar.finish();
@@ -259,6 +263,13 @@ int main(int argc, char const *argv[]) {
   H5Easy::dump(out_h5, "model_mean", model_mean);
   ArrayXd vs_ref_save = pmodel->interp_vs(z_samples);
   H5Easy::dump(out_h5, "vs_ref", vs_ref_save);
+
+  H5Easy::dump(out_h5, "num_init", num_init);
+  for (size_t i = 0; i < vs_init.size(); ++i) {
+    auto model = pmodel->generate(z_init[i], vs_init[i]);
+    std::string key = fmt::format("model_init/{:d}", i);
+    H5Easy::dump(out_h5, key, model);
+  }
 
   std::vector<int> mode_used;
   for (size_t i = 0; i < weight.size(); ++i) {

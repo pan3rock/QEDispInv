@@ -112,6 +112,7 @@ Dict FixVpRho::derivative([[maybe_unused]] const Eigen::ArrayXd &vs) {
   res["vs"] = dvs;
   return res;
 }
+
 void FixVpRho::get_vs_limits(const Eigen::ArrayXd &z, double vs_width,
                              Eigen::ArrayXd &vs_ref, Eigen::ArrayXd &lb,
                              Eigen::ArrayXd &ub) {
@@ -168,9 +169,12 @@ Dict Brocher05::derivative(const Eigen::ArrayXd &vs) {
   res["vs"] = dvs;
   return res;
 }
+void NearSurface::set_param(const std::vector<double> &param) {
+  vp2vs_ = param[0];
+}
 
-Eigen::ArrayXXd NearSurface::generate(const Eigen::ArrayXd &z,
-                                      const Eigen::ArrayXd &vs) {
+Eigen::ArrayXXd Gardner::generate(const Eigen::ArrayXd &z,
+                                  const Eigen::ArrayXd &vs) {
   const int nl = vs.size();
 
   ArrayXXd model(nl, 5);
@@ -184,11 +188,38 @@ Eigen::ArrayXXd NearSurface::generate(const Eigen::ArrayXd &z,
   return model;
 }
 
-Dict NearSurface::derivative(const Eigen::ArrayXd &vs) {
+Dict Gardner::derivative(const Eigen::ArrayXd &vs) {
   ArrayXd dvs = ArrayXd::Ones(vs.rows());
   ArrayXd dvp = vp2vs_ * dvs;
   ArrayXd vp = vp2vs_ * vs;
   ArrayXd drho = alpha_ * beta_ * pow(1000.0 * vp, beta_ - 1.0) * 1000.0 * dvp;
+
+  Dict res;
+  res["rho"] = drho;
+  res["vp"] = dvp;
+  res["vs"] = dvs;
+  return res;
+}
+
+Eigen::ArrayXXd NearSurface::generate(const Eigen::ArrayXd &z,
+                                      const Eigen::ArrayXd &vs) {
+  const int nl = vs.size();
+
+  ArrayXXd model(nl, 5);
+  for (int i = 0; i < nl; ++i) {
+    model(i, 0) = i + 1;
+    model(i, 1) = z(i);
+    model(i, 3) = vs(i);
+    model(i, 4) = vp2vs_ * vs[i];
+    model(i, 2) = a_ * pow(vs[i], 2) + b_ * vs[i] + c_;
+  }
+  return model;
+}
+
+Dict NearSurface::derivative(const Eigen::ArrayXd &vs) {
+  ArrayXd dvs = ArrayXd::Ones(vs.rows());
+  ArrayXd dvp = vp2vs_ * dvs;
+  ArrayXd drho = (2 * a_ * vs + b_) * dvs;
 
   Dict res;
   res["rho"] = drho;
