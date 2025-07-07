@@ -100,6 +100,8 @@ int main(int argc, char const *argv[]) {
   const auto rand_depth = toml::find<bool>(conf_inv, "rand_depth");
   const auto dintv_min = toml::find<double>(conf_inv, "dintv_min");
   auto zmax = toml::find<double>(conf_inv, "zmax");
+  const auto rmin = toml::find<double>(conf_inv, "rmin");
+  const auto rmax = toml::find<double>(conf_inv, "rmax");
 
   int nl;
   if (rand_depth) {
@@ -133,22 +135,39 @@ int main(int argc, char const *argv[]) {
     }
   }
 
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_real_distribution<> dist(0.0, 1.0);
+
+  fmt::print("lmin={:12.3f}, lmax={:12.3f}\n", data.lmin, data.lmax);
   std::vector<ArrayXd> z_init;
   if (num_init == 1) {
     z_init.push_back(model_ref.col(1));
   } else {
     for (int i_m = 0; i_m < num_init; ++i_m) {
       if (rand_depth) {
-        z_init.push_back(generate_random_depth(nl, zmax, dintv_min));
+        // z_init.push_back(generate_random_depth(nl, zmax, dintv_min));
+        double ratio = dist(gen) * (rmax - rmin) + rmin;
+        z_init.push_back(
+            generate_depth_by_layer_ratio(data.lmin, data.lmax, ratio));
       } else {
         z_init.push_back(model_ref.col(1));
       }
     }
   }
 
+  // zmax = 0.0;
+  // for (int i_m = 0; i_m < num_init; ++i_m) {
+  //   auto z = z_init[i_m];
+  //   double depmax = z(z.rows() - 1);
+  //   if (zmax < depmax)
+  //     zmax = depmax;
+  // }
+
   std::vector<ArrayXd> vs_ref, vs_lb, vs_ub;
   for (int i_m = 0; i_m < num_init; ++i_m) {
     ArrayXd z = z_init[i_m];
+    int nl = z.rows();
     ArrayXd vsr(nl), lb(nl), ub(nl);
     pmodel->get_vs_limits(z, vs_width, vsr, lb, ub);
     vs_ref.push_back(vsr);
@@ -156,10 +175,35 @@ int main(int argc, char const *argv[]) {
     vs_ub.push_back(ub);
   }
 
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::uniform_real_distribution<> dist(0.0, 1.0);
+  bool add_last_layer = false;
+  if (add_last_layer) {
+    auto c0 = data.c[0];
+    double cmax0 = *std::max_element(c0.begin(), c0.end());
+    double lmax = data.lmax / 2.0;
+    if (lmax / 2.0 > zmax) {
+      for (int i_m = 0; i_m < num_init; ++i_m) {
+        int nl = z_init[i_m].rows();
+        double cmax = std::max(cmax0, vs_ref[i_m][nl - 1]);
+        ArrayXd tmp(nl + 1);
+        tmp.head(nl) = z_init[i_m];
+        tmp(nl) = lmax / 2.0;
+        z_init[i_m] = tmp;
+        tmp.head(nl) = vs_ref[i_m];
+        tmp(nl) = cmax * 1.01;
+        vs_ref[i_m] = tmp;
+        tmp.head(nl) = vs_lb[i_m];
+        tmp(nl) = cmax;
+        vs_lb[i_m] = tmp;
+        tmp.head(nl) = vs_ub[i_m];
+        tmp(nl) = cmax + vs_width;
+        vs_ub[i_m] = tmp;
+      }
+      ++nl;
+    }
+  }
+
   auto gen_rand_vsinit = [&](const ArrayXd &lb, const ArrayXd &ub) -> ArrayXd {
+    int nl = lb.rows();
     ArrayXd rand = ArrayXd::NullaryExpr(nl, [&]() { return dist(gen); });
     ArrayXd x = lb.array() + (ub - lb).array() * rand;
     return x;
@@ -170,19 +214,21 @@ int main(int argc, char const *argv[]) {
     vs_init.push_back(model_ref.col(3));
   } else {
     for (int i_m = 0; i_m < num_init; ++i_m) {
-      vs_init.push_back(gen_rand_vsinit(vs_lb[i_m], vs_ub[i_m]));
+      // vs_init.push_back(gen_rand_vsinit(vs_lb[i_m], vs_ub[i_m]));
+      auto vs = pmodel->interp_vs(z_init[i_m]);
+      vs_init.push_back(vs);
     }
   }
 
-  // for (size_t i = 0; i < z_init.size(); ++i) {
-  //   auto z1 = z_init[i];
-  //   auto vs1 = vs_init[i];
-  //   fmt::print("{:5d}{:5d}{:5d}\n", i, z1.rows(), vs1.rows());
-  //   for (int j = 0; j < z1.rows(); ++j) {
-  //     fmt::print("{:5d}{:12.5f}{:12.5f}\n", j, z1(j), vs1(j));
-  //   }
-  //   fmt::print("\n");
-  // }
+  for (size_t i = 0; i < z_init.size(); ++i) {
+    auto z1 = z_init[i];
+    auto vs1 = vs_init[i];
+    fmt::print("{:5d}{:5d}{:5d}\n", i, z1.rows(), vs1.rows());
+    for (int j = 0; j < z1.rows(); ++j) {
+      fmt::print("{:5d}{:12.5f}{:12.5f}\n", j, z1(j), vs1(j));
+    }
+    fmt::print("\n");
+  }
 
   Tqdm bar;
   int num_total = num_init * num_noise;
@@ -202,30 +248,34 @@ int main(int argc, char const *argv[]) {
 
     VectorXd x = vs_init[i_m];
     double feval = 0.0;
+    int it = 0;
     try {
-      int it = solver.minimize(prob, x, feval, vs_lb[i_m], vs_ub[i_m]);
-      fitness.push_back(feval);
-      niter.push_back(it);
-      z_inv.push_back(z_model);
-      vs_inv.push_back(x);
-      auto model = pmodel->generate(z_model, x);
-      auto disp = prob.forward(model);
-      disp_syn.push_back(disp);
+      it = solver.minimize(prob, x, feval, vs_lb[i_m], vs_ub[i_m]);
     } catch (const std::exception &exc) {
-      std::cout << std::endl;
-      auto model = pmodel->generate(z_model, x);
-      std::cout << model << std::endl;
+      for (int j = 0; j < z_model.rows(); ++j) {
+        fmt::print("{:5d}{:12.4f}{:12.4f}\n", j, z_model[j], x[j]);
+      }
+      fmt::print("\n");
       std::cerr << exc.what() << std::endl;
     }
+    fitness.push_back(feval);
+    niter.push_back(it);
+    z_inv.push_back(z_model);
+    vs_inv.push_back(x);
+    auto model = pmodel->generate(z_model, x);
+    auto disp = prob.forward(model);
+    disp_syn.push_back(disp);
   }
   bar.finish();
 
-  std::vector<size_t> idx_outlier = detect_outliers(fitness);
-  remove_by_indices(fitness, idx_outlier);
-  remove_by_indices(niter, idx_outlier);
-  remove_by_indices(z_inv, idx_outlier);
-  remove_by_indices(vs_inv, idx_outlier);
-  remove_by_indices(disp_syn, idx_outlier);
+  if (num_total > 1) {
+    std::vector<size_t> idx_outlier = detect_outliers(fitness);
+    remove_by_indices(fitness, idx_outlier);
+    remove_by_indices(niter, idx_outlier);
+    remove_by_indices(z_inv, idx_outlier);
+    remove_by_indices(vs_inv, idx_outlier);
+    remove_by_indices(disp_syn, idx_outlier);
+  }
 
   // hist of inversion model
   const int num_hist = 100;

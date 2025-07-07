@@ -16,6 +16,8 @@ public:
   std::set<int> mode;
   std::unordered_map<int, std::vector<double>> freq, c, sigma;
   int count;
+
+  double lmin, lmax;
 };
 
 Data resample(const Data &data);

@@ -12,11 +12,24 @@
 using namespace Eigen;
 
 Data::Data(const Eigen::Ref<const Eigen::ArrayXXd> disp) : count(disp.rows()) {
+  std::vector<double> L;
   for (int i = 0; i < disp.rows(); ++i) {
     int m = static_cast<int>(disp(i, 2));
     freq[m].push_back(disp(i, 0));
     c[m].push_back(disp(i, 1));
     mode.insert(m);
+
+    if (m == 0) {
+      L.push_back(disp(i, 1) / disp(i, 0));
+    }
+  }
+
+  if (L.size() > 0) {
+    lmin = *std::min_element(L.begin(), L.end());
+    lmax = *std::max_element(L.begin(), L.end());
+  } else {
+    lmin = 0.0;
+    lmax = 0.0;
   }
 
   if (disp.cols() == 4) {
@@ -259,41 +272,31 @@ Eigen::ArrayXXd compute_hist2d(const std::vector<Eigen::ArrayXd> &z_inv,
   vs_samples = ArrayXd::LinSpaced(num_hist, vsmin, vsmax);
 
   ArrayXXd hist2d = ArrayXXd::Zero(num_hist, num_hist);
-  int nl = z_inv[0].rows();
   for (size_t n = 0; n < z_inv.size(); ++n) {
     ArrayXd z = z_inv[n];
     ArrayXd vs = vs_inv[n];
+    int nl = z.rows();
     int i_z = 0;
     for (int i = 0; i < nl; ++i) {
+      if (z(i) > zmax)
+        break;
       int i1_v = static_cast<int>(floor((vs(i) - vsmin) / dvs));
 
       double zub;
       if (i == nl - 1) {
         zub = zmax;
       } else {
-        zub = z(i + 1);
+        if (z(i + 1) > zmax) {
+          zub = zmax;
+        } else {
+          zub = z(i + 1);
+        }
       }
 
       while (i_z * dz <= zub) {
         hist2d(i_z, i1_v) += f_val[n];
         ++i_z;
       }
-      // if (i != nl - 1) {
-      //   int i2_v = i1_v;
-      //   if (vs(i) < vs(i + 1)) {
-      //     while (vsmin + i2_v * dvs < vs(i + 1) && i2_v < num_hist) {
-      //       hist2d(i_z, i2_v) += 1;
-      //       ++i2_v;
-      //     }
-      //   } else {
-      //     while (vsmin + i2_v * dvs > vs(i + 1) && i2_v >= 0) {
-      //       hist2d(i_z, i2_v) += 1;
-      //       --i2_v;
-      //     }
-      //   }
-      // }
-
-      // i_z += 1;
     }
   }
   return hist2d;
