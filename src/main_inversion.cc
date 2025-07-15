@@ -76,8 +76,8 @@ int main(int argc, char const *argv[]) {
   std::shared_ptr<Vs2Model> pmodel;
   if (vs2model == "nearsurface") {
     pmodel = std::make_shared<NearSurface>(model_ref);
-    const auto vs2vp = toml::find<double>(conf_inv, "vs2vp");
-    pmodel->set_param({vs2vp});
+    const auto vp2vs = toml::find<double>(conf_inv, "vp2vs");
+    pmodel->set_param({vp2vs});
   } else if (vs2model == "gardner") {
     pmodel = std::make_shared<Gardner>(model_ref);
   } else if (vs2model == "fixvprho") {
@@ -98,6 +98,7 @@ int main(int argc, char const *argv[]) {
   const auto num_init = toml::find<int>(conf_inv, "num_init");
   const auto num_noise = toml::find<int>(conf_inv, "num_noise");
   const auto rand_depth = toml::find<bool>(conf_inv, "rand_depth");
+  const auto rand_vs = toml::find<bool>(conf_inv, "rand_vs");
   const auto dintv_min = toml::find<double>(conf_inv, "dintv_min");
   auto zmax = toml::find<double>(conf_inv, "zmax");
   const auto rmin = toml::find<double>(conf_inv, "rmin");
@@ -149,20 +150,12 @@ int main(int argc, char const *argv[]) {
         // z_init.push_back(generate_random_depth(nl, zmax, dintv_min));
         double ratio = dist(gen) * (rmax - rmin) + rmin;
         z_init.push_back(
-            generate_depth_by_layer_ratio(data.lmin, data.lmax, ratio));
+            generate_depth_by_layer_ratio(data.lmin, data.lmax, ratio, zmax));
       } else {
         z_init.push_back(model_ref.col(1));
       }
     }
   }
-
-  // zmax = 0.0;
-  // for (int i_m = 0; i_m < num_init; ++i_m) {
-  //   auto z = z_init[i_m];
-  //   double depmax = z(z.rows() - 1);
-  //   if (zmax < depmax)
-  //     zmax = depmax;
-  // }
 
   std::vector<ArrayXd> vs_ref, vs_lb, vs_ub;
   for (int i_m = 0; i_m < num_init; ++i_m) {
@@ -175,18 +168,20 @@ int main(int argc, char const *argv[]) {
     vs_ub.push_back(ub);
   }
 
-  bool add_last_layer = false;
+  bool add_last_layer = true;
   if (add_last_layer) {
     auto c0 = data.c[0];
     double cmax0 = *std::max_element(c0.begin(), c0.end());
-    double lmax = data.lmax / 2.0;
-    if (lmax / 2.0 > zmax) {
+    double half_lmax = data.lmax / 2.0;
+    if (half_lmax > zmax) {
       for (int i_m = 0; i_m < num_init; ++i_m) {
         int nl = z_init[i_m].rows();
+        if (half_lmax < z_init[i_m](nl - 1))
+          continue;
         double cmax = std::max(cmax0, vs_ref[i_m][nl - 1]);
         ArrayXd tmp(nl + 1);
         tmp.head(nl) = z_init[i_m];
-        tmp(nl) = lmax / 2.0;
+        tmp(nl) = half_lmax;
         z_init[i_m] = tmp;
         tmp.head(nl) = vs_ref[i_m];
         tmp(nl) = cmax * 1.01;
@@ -211,24 +206,31 @@ int main(int argc, char const *argv[]) {
 
   std::vector<ArrayXd> vs_init;
   if (num_init == 1) {
-    vs_init.push_back(model_ref.col(3));
+    vs_init.push_back(vs_ref[0]);
   } else {
     for (int i_m = 0; i_m < num_init; ++i_m) {
-      // vs_init.push_back(gen_rand_vsinit(vs_lb[i_m], vs_ub[i_m]));
-      auto vs = pmodel->interp_vs(z_init[i_m]);
-      vs_init.push_back(vs);
+      if (rand_vs) {
+        vs_init.push_back(gen_rand_vsinit(vs_lb[i_m], vs_ub[i_m]));
+      } else {
+        auto vs = pmodel->interp_vs(z_init[i_m]);
+        vs_init.push_back(vs);
+      }
     }
   }
 
+#ifdef DEBUG
   for (size_t i = 0; i < z_init.size(); ++i) {
     auto z1 = z_init[i];
     auto vs1 = vs_init[i];
     fmt::print("{:5d}{:5d}{:5d}\n", i, z1.rows(), vs1.rows());
+    auto model = pmodel->generate(z1, vs1);
     for (int j = 0; j < z1.rows(); ++j) {
-      fmt::print("{:5d}{:12.5f}{:12.5f}\n", j, z1(j), vs1(j));
+      fmt::print("{:5d}{:12.5f}{:12.5f}{:12.5f}{:12.5f}\n", j, model(j, 1),
+                 model(j, 2), model(j, 3), model(j, 4));
     }
     fmt::print("\n");
   }
+#endif
 
   Tqdm bar;
   int num_total = num_init * num_noise;
@@ -252,12 +254,18 @@ int main(int argc, char const *argv[]) {
     try {
       it = solver.minimize(prob, x, feval, vs_lb[i_m], vs_ub[i_m]);
     } catch (const std::exception &exc) {
-      for (int j = 0; j < z_model.rows(); ++j) {
-        fmt::print("{:5d}{:12.4f}{:12.4f}\n", j, z_model[j], x[j]);
-      }
-      fmt::print("\n");
+#ifdef DEBUG
       std::cerr << exc.what() << std::endl;
+#endif
     }
+#ifdef DEBUG
+    for (int j = 0; j < z_model.rows(); ++j) {
+      fmt::print("{:5d}{:12.5f}{:12.6f}{:12.6f}{:12.6f}\n", j, z_model[j], x[j],
+                 vs_lb[i_m][j], vs_ub[i_m][j]);
+    }
+    fmt::print("\n");
+#endif
+
     fitness.push_back(feval);
     niter.push_back(it);
     z_inv.push_back(z_model);
@@ -281,12 +289,14 @@ int main(int argc, char const *argv[]) {
   const int num_hist = 100;
   double vsmin = 1.0e10;
   double vsmax = 0.0;
-  for (size_t i = 0; i < vs_lb.size(); ++i) {
-    double lbmin = vs_lb[i].minCoeff();
+  for (size_t i = 0; i < vs_inv.size(); ++i) {
+    double lbmin = vs_inv[i].minCoeff();
     vsmin = std::min(lbmin, vsmin);
-    double ubmax = vs_ub[i].maxCoeff();
+    double ubmax = vs_inv[i].maxCoeff();
     vsmax = std::max(ubmax, vsmax);
   }
+  vsmin *= 0.95;
+  vsmax *= 1.05;
   ArrayXd z_samples(num_hist), vs_samples(num_hist);
   ArrayXXd hist = compute_hist2d(z_inv, vs_inv, fitness, vsmin, vsmax, zmax,
                                  num_hist, z_samples, vs_samples);

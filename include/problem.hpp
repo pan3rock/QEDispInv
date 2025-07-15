@@ -18,6 +18,7 @@ public:
   int count;
 
   double lmin, lmax;
+  double cmin, cmax;
 };
 
 Data resample(const Data &data);

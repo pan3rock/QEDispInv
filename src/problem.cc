@@ -24,6 +24,9 @@ Data::Data(const Eigen::Ref<const Eigen::ArrayXXd> disp) : count(disp.rows()) {
     }
   }
 
+  cmin = disp.col(1).minCoeff();
+  cmax = disp.col(1).maxCoeff();
+
   if (L.size() > 0) {
     lmin = *std::min_element(L.begin(), L.end());
     lmax = *std::max_element(L.begin(), L.end());
@@ -141,13 +144,13 @@ void DispersionCurves::load_data(Data &data) {
 }
 
 int DispersionCurves::update_fitness(const VectorXd &x) {
-  ++num_forward_;
   auto equal = [&](const VectorXd &x2) { return (x - x2).norm() < 1.0e-8; };
   auto x_exist = std::find_if(x_computed_.begin(), x_computed_.end(), equal);
   if (x_exist != x_computed_.end()) {
     int index = x_exist - x_computed_.begin();
     return index;
   }
+  ++num_forward_;
 
   ArrayXXd model = x2model(x);
   auto der = vs2model_->derivative(x);

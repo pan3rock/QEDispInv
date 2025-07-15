@@ -7,9 +7,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-non-virtual-dtor")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -fPIC -flto=auto")
 set(CMAKE_Fortran_FLAGS "-Wall -g -O3")
 
+option(ENABLE_DEBUG "Enable debug outputs" OFF)
+option(USE_OPENMP "with openmp" ON)
 
 # OpenMP
-option(USE_OPENMP "with openmp" on)
 if (USE_OPENMP)
     find_package(OpenMP REQUIRED)
 endif()

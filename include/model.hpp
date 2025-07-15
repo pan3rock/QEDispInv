@@ -148,6 +148,6 @@ private:
 Eigen::ArrayXd generate_random_depth(int N, double zmax, double min_gap);
 
 Eigen::ArrayXd generate_depth_by_layer_ratio(double lmin, double lmax,
-                                             double ratio);
+                                             double ratio, double zmax);
 
 #endif

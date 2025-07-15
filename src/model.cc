@@ -2,6 +2,7 @@
 
 #include <Eigen/Dense>
 #include <fmt/format.h>
+#include <iostream>
 #include <map>
 #include <random>
 
@@ -77,11 +78,8 @@ void Vs2Model::get_vs_limits(const Eigen::ArrayXd &z, double vs_width,
   vs_ref = interp_vs(z);
   ArrayXd vs_min = vs_ref - vs_width / 2.0;
   ArrayXd vs_max = vs_ref + vs_width / 2.0;
-  double tiny = 1.0e-2;
   for (int i = 0; i < vs_min.rows(); ++i) {
-    if (vs_min(i) < tiny) {
-      vs_min(i) = tiny;
-    }
+    vs_min(i) = std::max(0.01, vs_min(i));
   }
   lb = vs_min;
   ub = vs_max;
@@ -123,9 +121,7 @@ void FixVpRho::get_vs_limits(const Eigen::ArrayXd &z, double vs_width,
   ArrayXd vs_max = vs_ref + vs_width / 2.0;
   double tiny = 1.0e-2;
   for (int i = 0; i < vs_min.rows(); ++i) {
-    if (vs_min(i) < tiny) {
-      vs_min(i) = tiny;
-    }
+    vs_min(i) = std::max(0.01, vs_min(i));
     if (vs_max(i) > vp_ref(i) - tiny) {
       vs_max(i) = vp_ref(i) - tiny;
     }
@@ -287,12 +283,11 @@ Eigen::ArrayXd generate_random_depth(int N, double zmax, double min_gap_raw) {
 }
 
 Eigen::ArrayXd generate_depth_by_layer_ratio(double lmin, double lmax,
-                                             double ratio) {
+                                             double ratio, double zmax) {
   double depmax = lmax / 2.0;
+  if (zmax > depmax)
+    depmax = zmax;
   std::vector<double> depth{0.0};
-  // depth.push_back(lmin / 3.0);
-  // double d = depth.back() + ratio * lmin / 3.0;
-  // depth.push_back(d);
   depth.push_back(ratio * lmin / 3.0);
   double d = depth.back() + ratio * depth.back();
   depth.push_back(d);

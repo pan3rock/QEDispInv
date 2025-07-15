@@ -25,6 +25,7 @@ def main():
     parser.add_argument("--plot_disp", action="store_true")
     parser.add_argument("--plot_fit", action="store_true")
     parser.add_argument("--full_disp", action="store_true")
+    parser.add_argument("--xlim", nargs=2, type=float)
     args = parser.parse_args()
     file_inv = args.file_inv
     show_model = args.plot_model
@@ -32,6 +33,7 @@ def main():
     show_fitness = args.plot_fit
     show_full_disp = args.full_disp
     file_model_data = args.model_data
+    xlim = args.xlim
 
     fh5 = h5py.File(file_inv, "r")
     z_sample = fh5["z_sample"][()]
@@ -62,9 +64,10 @@ def main():
             vs_cred10,
             vs_cred90,
             file_model_data,
+            xlim,
         )
     if show_disp:
-        plot_disp(data, disp_syn, fitness, mode_used, show_full_disp)
+        plot_disp(data, disp_syn, fitness, mode_used, show_full_disp, xlim)
     if show_fitness:
         plot_fitness(fitness)
 
@@ -82,19 +85,24 @@ def plot_model(
     vs_cred10,
     vs_cred90,
     file_model_data,
+    xlim,
 ):
     vs_hist = np.ma.masked_array(vs_hist, mask=vs_hist <= 0)
 
+    dx = vs_sample[1] - vs_sample[0]
+    dy = z_sample[1] - z_sample[0]
+    x = vs_sample - dx / 2.0
+    y = z_sample - dy / 2.0
+
     fig, ax = plt.subplots(layout="constrained")
     ax.pcolormesh(
-        vs_sample,
-        z_sample,
+        x,
+        y,
         vs_hist,
-        # cmap="Blues_r",
         cmap="Wistia",
         alpha=0.8,
     )
-    ax.plot(vs_ref, z_sample, "k-", alpha=0.4, lw=2, label="Reference")
+    ax.plot(vs_ref, z_sample, "k-", alpha=0.6, lw=2, label="Reference")
 
     # ax.plot(
     #     vs_mean,
@@ -123,7 +131,7 @@ def plot_model(
         dashes=(5, 5),
         lw=1,
         alpha=0.8,
-        label="10/90 percentile",
+        label="P10/P90",
     )
     ax.plot(vs_cred90, z_sample, "k--", lw=1, alpha=0.6, dashes=(5, 5))
 
@@ -136,6 +144,8 @@ def plot_model(
             vs = np.append(vs, vs[-1])
         ax.step(vs, z, "-", c="r", alpha=0.7, lw=2, label="Target")
 
+    if xlim:
+        ax.set_xlim(xlim)
     ax.set_ylim([0, z_sample[-1]])
     ax.invert_yaxis()
     ax.set_xlabel("Vs (km/s)")
@@ -145,7 +155,7 @@ def plot_model(
     ax.grid(linestyle=":")
 
 
-def plot_disp(data, disp_syn, fitness, mode_used, show_full_disp):
+def plot_disp(data, disp_syn, fitness, mode_used, show_full_disp, xlim):
     if show_full_disp:
         mode_show = list(set(data[:, 2].astype(int)))
     else:
@@ -153,6 +163,10 @@ def plot_disp(data, disp_syn, fitness, mode_used, show_full_disp):
 
     val = 1.0 / fitness
     alpha = val / np.amax(val) * 0.8
+
+    ind = np.argsort(alpha)
+    alpha = alpha[ind]
+    disp_syn = [disp_syn[i] for i in ind]
 
     fig, ax = plt.subplots(layout="constrained")
     for i, disp in enumerate(disp_syn):
@@ -163,7 +177,11 @@ def plot_disp(data, disp_syn, fitness, mode_used, show_full_disp):
 
     modes = data[:, 2].astype(int)
     f_show = np.hstack([data[modes == m][:, 0] for m in mode_show])
-    ax.set_xlim([np.amin(f_show), np.amax(f_show)])
+
+    if xlim:
+        ax.set_xlim(xlim)
+    else:
+        ax.set_xlim([np.amin(f_show), np.amax(f_show)])
 
     ax.set_xlabel("Frequency (Hz)")
     ax.set_ylabel("Phase velocity (km/s)")

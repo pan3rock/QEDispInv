@@ -55,6 +55,10 @@ target_link_libraries(inversion
     timer
 )
 
+if(ENABLE_DEBUG)
+    target_compile_definitions(inversion PRIVATE DEBUG)
+endif()
+
 if (USE_OPENMP)
 target_link_libraries(inversion
     PRIVATE
