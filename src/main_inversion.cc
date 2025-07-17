@@ -101,6 +101,7 @@ int main(int argc, char const *argv[]) {
   const auto rand_vs = toml::find<bool>(conf_inv, "rand_vs");
   const auto dintv_min = toml::find<double>(conf_inv, "dintv_min");
   auto zmax = toml::find<double>(conf_inv, "zmax");
+  const auto r0 = toml::find<double>(conf_inv, "r0");
   const auto rmin = toml::find<double>(conf_inv, "rmin");
   const auto rmax = toml::find<double>(conf_inv, "rmax");
 
@@ -149,8 +150,8 @@ int main(int argc, char const *argv[]) {
       if (rand_depth) {
         // z_init.push_back(generate_random_depth(nl, zmax, dintv_min));
         double ratio = dist(gen) * (rmax - rmin) + rmin;
-        z_init.push_back(
-            generate_depth_by_layer_ratio(data.lmin, data.lmax, ratio, zmax));
+        z_init.push_back(generate_depth_by_layer_ratio(data.lmin, data.lmax, r0,
+                                                       ratio, zmax));
       } else {
         z_init.push_back(model_ref.col(1));
       }

@@ -162,7 +162,9 @@ def plot_disp(data, disp_syn, fitness, mode_used, show_full_disp, xlim):
         mode_show = mode_used
 
     val = 1.0 / fitness
-    alpha = val / np.amax(val) * 0.8
+    vmin = np.amin(val)
+    vmax = np.amax(val)
+    alpha = (val - vmin) / (vmax - vmin) * 0.8
 
     ind = np.argsort(alpha)
     alpha = alpha[ind]

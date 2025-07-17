@@ -106,8 +106,7 @@ void DispersionCurves::update_matM_An2020() {
     matL(i, i) = w(i);
     matL(i, i + 1) = -w(i);
   }
-  matL.topRows(nl_ - 1) *= sqrt(lamb_vs_);
-  matM_ = matL.transpose() * matL;
+  matM_ = lamb_vs_ * matL.transpose() * matL;
 }
 
 void DispersionCurves::update_matM_tr1() {
@@ -117,8 +116,7 @@ void DispersionCurves::update_matM_tr1() {
     matL(i, i) = 1.0;
     matL(i, i + 1) = -1.0;
   }
-  matL.topRows(nl_ - 1) *= sqrt(lamb_vs_);
-  matM_ = matL.transpose() * matL;
+  matM_ = lamb_vs_ * matL.transpose() * matL;
 }
 
 void DispersionCurves::load_data(Data &data) {

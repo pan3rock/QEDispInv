@@ -283,12 +283,13 @@ Eigen::ArrayXd generate_random_depth(int N, double zmax, double min_gap_raw) {
 }
 
 Eigen::ArrayXd generate_depth_by_layer_ratio(double lmin, double lmax,
-                                             double ratio, double zmax) {
+                                             double r0, double ratio,
+                                             double zmax) {
   double depmax = lmax / 2.0;
   if (zmax > depmax)
     depmax = zmax;
   std::vector<double> depth{0.0};
-  depth.push_back(ratio * lmin / 3.0);
+  depth.push_back(ratio * lmin / 3.0 * r0);
   double d = depth.back() + ratio * depth.back();
   depth.push_back(d);
 
