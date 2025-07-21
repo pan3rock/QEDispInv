@@ -21,12 +21,14 @@
  */
 
 #include "disp.hpp"
+#include "swegn96.hpp"
 #include "utils.hpp"
 
 #include <CLI11.hpp>
 #include <Eigen/Dense>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
+#include <highfive/H5Easy.hpp>
 #include <string>
 #include <toml.hpp>
 #include <vector>
@@ -46,6 +48,8 @@ int main(int argc, char const *argv[]) {
                  "frequencies for computation");
   bool sh = false;
   app.add_flag("--sh", sh, "whether to compute Love waves");
+  bool compute_kernel = false;
+  app.add_flag("--compute_kernel", compute_kernel, "whether to compute kernel");
   std::string file_model = "";
   app.add_option("--model", file_model, "filename of model");
   std::string file_out = "disp.txt";
@@ -88,6 +92,31 @@ int main(int argc, char const *argv[]) {
   }
 
   out.close();
+
+  if (compute_kernel) {
+    ArrayXXd disp = loadtxt(file_out);
+    const int nd = disp.rows();
+    const int nl = model.rows();
+    ArrayXXd kvp(nl, nd), kvs(nl, nd), krho(nl, nd);
+    SwEgn96 se(model, sh);
+    for (int i = 0; i < disp.rows(); ++i) {
+      double f = disp(i, 0);
+      double c = disp(i, 1);
+      auto ker = se.kernel(f, c);
+      kvp.col(i) = ker["vp"];
+      kvs.col(i) = ker["vs"];
+      krho.col(i) = ker["rho"];
+    }
+    ArrayXd z = model.col(1);
+
+    std::string file_ker = "kernel.h5";
+    H5Easy::File fout(file_ker, H5Easy::File::Overwrite);
+    H5Easy::dump(fout, "disp", disp);
+    H5Easy::dump(fout, "kvp", kvp);
+    H5Easy::dump(fout, "kvs", kvs);
+    H5Easy::dump(fout, "krho", krho);
+    H5Easy::dump(fout, "z", z);
+  }
 
   return 0;
 }

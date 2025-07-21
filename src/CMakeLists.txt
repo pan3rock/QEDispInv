@@ -35,6 +35,7 @@ add_executable(forward
 target_link_libraries(forward
     PRIVATE
     disp
+    HighFive
     fmt::fmt-header-only
     toml11
 )
