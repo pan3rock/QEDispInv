@@ -4,7 +4,7 @@ project(dctomo-mcg VERSION 0.1.0 LANGUAGES CXX Fortran)
 set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-non-virtual-dtor")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -fPIC -flto=auto")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -fPIC -ffp-contract=fast")
 set(CMAKE_Fortran_FLAGS "-Wall -g -O3")
 
 option(ENABLE_DEBUG "Enable debug outputs" OFF)

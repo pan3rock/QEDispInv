@@ -110,7 +110,7 @@ double Dispersion::evaluate_rayleigh_velocity() {
   return root;
 }
 
-double Dispersion::approx(double f, double c) {
+double Dispersion::approx(double f, double c) const {
   double sum = 0.0;
   double c_2 = pow(c, -2);
   for (int i = itop_; i < nl_ - 1; ++i) {
@@ -130,7 +130,7 @@ double Dispersion::approx(double f, double c) {
   return sum;
 }
 
-std::vector<double> Dispersion::get_samples(double f) {
+std::vector<double> Dispersion::get_samples(double f) const {
   std::vector<double> pred;
   int nmax = static_cast<int>(std::floor(approx(f, vs_hf_))) + 1;
   double dc = (vs_hf_ - vs_min_) / nmax;
@@ -177,7 +177,7 @@ std::vector<double> Dispersion::get_samples(double f) {
 }
 
 std::vector<std::pair<double, double>>
-Dispersion::find_coarse_intv(double f, int num_mode) {
+Dispersion::find_coarse_intv(double f, int num_mode) const {
   std::vector<double> samples = get_samples(f);
 
   std::vector<double> x_sample{samples[0]};
@@ -227,7 +227,7 @@ Dispersion::find_coarse_intv(double f, int num_mode) {
   }
 }
 
-std::vector<double> Dispersion::search(double f, int num_mode) {
+std::vector<double> Dispersion::search(double f, int num_mode) const {
   std::function<double(double)> func = [&](double c) {
     double val = sf_->evaluate(f, c);
     return val;
@@ -251,7 +251,7 @@ std::vector<double> Dispersion::search(double f, int num_mode) {
   }
 }
 
-double Dispersion::search_mode(double f, int mode) {
+double Dispersion::search_mode(double f, int mode) const {
   auto cs = search(f, mode + 1);
   if (static_cast<int>(cs.size()) < mode + 1) {
     return std::numeric_limits<double>::quiet_NaN();
@@ -263,7 +263,7 @@ double Dispersion::search_mode(double f, int mode) {
 void Dispersion::locate_extremum(double f, const std::vector<double> &x,
                                  const std::vector<double> &y,
                                  std::vector<double> &x_ext,
-                                 std::vector<double> &y_ext) {
+                                 std::vector<double> &y_ext) const {
   auto x_tmp = x;
   auto y_tmp = y;
 

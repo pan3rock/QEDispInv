@@ -137,10 +137,6 @@ int main(int argc, char const *argv[]) {
     }
   }
 
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::uniform_real_distribution<> dist(0.0, 1.0);
-
   fmt::print("lmin={:12.3f}, lmax={:12.3f}\n", data.lmin, data.lmax);
   std::vector<ArrayXd> z_init;
   if (num_init == 1) {
@@ -149,9 +145,8 @@ int main(int argc, char const *argv[]) {
     for (int i_m = 0; i_m < num_init; ++i_m) {
       if (rand_depth) {
         // z_init.push_back(generate_random_depth(nl, zmax, dintv_min));
-        double ratio = dist(gen) * (rmax - rmin) + rmin;
         z_init.push_back(generate_depth_by_layer_ratio(data.lmin, data.lmax, r0,
-                                                       ratio, zmax));
+                                                       rmin, rmax, zmax));
       } else {
         z_init.push_back(model_ref.col(1));
       }
@@ -197,6 +192,10 @@ int main(int argc, char const *argv[]) {
       ++nl;
     }
   }
+
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_real_distribution<> dist(0.0, 1.0);
 
   auto gen_rand_vsinit = [&](const ArrayXd &lb, const ArrayXd &ub) -> ArrayXd {
     int nl = lb.rows();
@@ -288,14 +287,8 @@ int main(int argc, char const *argv[]) {
 
   // hist of inversion model
   const int num_hist = 100;
-  double vsmin = 1.0e10;
-  double vsmax = 0.0;
-  for (size_t i = 0; i < vs_inv.size(); ++i) {
-    double lbmin = vs_inv[i].minCoeff();
-    vsmin = std::min(lbmin, vsmin);
-    double ubmax = vs_inv[i].maxCoeff();
-    vsmax = std::max(ubmax, vsmax);
-  }
+  double vsmin = min_varray(vs_inv);
+  double vsmax = max_varray(vs_inv);
   vsmin *= 0.95;
   vsmax *= 1.05;
   ArrayXd z_samples(num_hist), vs_samples(num_hist);

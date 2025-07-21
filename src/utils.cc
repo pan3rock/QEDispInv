@@ -26,8 +26,11 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <numeric>
 #include <vector>
+
+const double INF = std::numeric_limits<double>::infinity();
 
 using namespace Eigen;
 
@@ -121,4 +124,22 @@ std::vector<double> percentiles(const std::vector<double> &data,
   }
 
   return results;
+}
+
+double min_varray(const std::vector<Eigen::ArrayXd> &va) {
+  double vmin = INF;
+  for (size_t i = 0; i < va.size(); ++i) {
+    double min = va[i].minCoeff();
+    vmin = std::min(min, vmin);
+  }
+  return vmin;
+}
+
+double max_varray(const std::vector<Eigen::ArrayXd> &va) {
+  double vmax = -INF;
+  for (size_t i = 0; i < va.size(); ++i) {
+    double max = va[i].maxCoeff();
+    vmax = std::max(max, vmax);
+  }
+  return vmax;
 }

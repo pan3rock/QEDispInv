@@ -11,17 +11,17 @@ class Dispersion {
 public:
   Dispersion(const Eigen::Ref<const Eigen::ArrayXXd> model, bool sh);
   ~Dispersion();
-  std::vector<double> search(double f, int num_mode);
-  double search_mode(double f, int mode);
-  std::vector<double> get_samples(double f);
+  std::vector<double> search(double f, int num_mode) const;
+  double search_mode(double f, int mode) const;
+  std::vector<double> get_samples(double f) const;
   void locate_extremum(double f, const std::vector<double> &x,
                        const std::vector<double> &y, std::vector<double> &x_ext,
-                       std::vector<double> &y_ext);
-  double approx(double f, double c);
+                       std::vector<double> &y_ext) const;
+  double approx(double f, double c) const;
 
 private:
   std::vector<std::pair<double, double>> find_coarse_intv(double f,
-                                                          int num_mode);
+                                                          int num_mode) const;
   double evaluate_rayleigh_velocity();
 
   // parameters for initial samplings

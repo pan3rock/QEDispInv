@@ -19,4 +19,7 @@ void remove_by_indices(std::vector<T> &data, std::vector<size_t> indices) {
     data.erase(data.begin() + index);
   }
 }
+
+double min_varray(const std::vector<Eigen::ArrayXd> &va);
+double max_varray(const std::vector<Eigen::ArrayXd> &va);
 #endif
