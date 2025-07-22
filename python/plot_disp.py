@@ -9,6 +9,7 @@ params = {
     "xtick.labelsize": 12,
     "ytick.labelsize": 12,
     "legend.fontsize": 14,
+    "font.family": "serif",
 }
 plt.rcParams.update(params)
 
@@ -51,13 +52,10 @@ if __name__ == "__main__":
     else:
         colors = ["k"] * 5000
 
-    if file_out:
-        plt.style.use(["science", "nature"])
-
-    plt.figure()
+    fig, ax = plt.subplots(layout="constrained")
     for i, m in enumerate(modes):
         d = disp[disp[:, 2] == m]
-        plt.plot(d[:, 0], d[:, 1] * km2m, "-", c=colors[i], label=str(m))
+        ax.plot(d[:, 0], d[:, 1] * km2m, "-", c=colors[i], label=str(m))
 
     if use_color:
         if len(modes) < 5:
@@ -68,15 +66,14 @@ if __name__ == "__main__":
         modes = set(disp_ref[:, 2].astype(int))
         for i, m in enumerate(modes):
             d = disp_ref[disp_ref[:, 2] == m]
-            plt.plot(d[:, 0], d[:, 1] * km2m, "--", c=colors[i])
+            ax.plot(d[:, 0], d[:, 1] * km2m, "--", c=colors[i])
 
-    plt.xlim([np.min(disp[:, 0]), np.max(disp[:, 0])])
+    ax.set_xlim([np.min(disp[:, 0]), np.max(disp[:, 0])])
     if ylim:
-        plt.ylim(ylim)
-    plt.xlabel("Frequency (Hz)")
-    plt.ylabel("Phase velocity ({:s}/s)".format(unit))
-    plt.tight_layout()
+        ax.set_ylim(ylim)
+    ax.set_xlabel("Frequency (Hz)")
+    ax.set_ylabel("Phase velocity ({:s}/s)".format(unit))
 
     if file_out:
-        plt.savefig(file_out, dpi=dpi)
+        fig.savefig(file_out, dpi=dpi)
     plt.show()

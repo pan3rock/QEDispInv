@@ -227,12 +227,37 @@ Dispersion::find_coarse_intv(double f, int num_mode) const {
   }
 }
 
+std::vector<std::pair<double, double>>
+Dispersion::find_coarse_intv_raw(double f, int num_mode) const {
+  std::vector<double> samples = get_samples(f);
+
+  double x1 = samples[0];
+  double y1 = sf_->evaluate(f, x1);
+
+  int count_root = 0;
+  std::vector<std::pair<double, double>> find_intv;
+  for (size_t i = 1; i < samples.size(); ++i) {
+    double x2 = samples[i];
+    double y2 = sf_->evaluate(f, x2);
+    if (y1 * y2 < 0) {
+      find_intv.push_back({x1, x2});
+      ++count_root;
+    }
+    x1 = x2;
+    y1 = y2;
+    if (count_root >= num_mode)
+      break;
+  }
+  return find_intv;
+}
+
 std::vector<double> Dispersion::search(double f, int num_mode) const {
   std::function<double(double)> func = [&](double c) {
     double val = sf_->evaluate(f, c);
     return val;
   };
   auto find_intv = find_coarse_intv(f, num_mode);
+  // auto find_intv = find_coarse_intv_raw(f, num_mode);
 
   std::vector<double> find;
   for (auto it = find_intv.cbegin(); it != find_intv.end(); ++it) {

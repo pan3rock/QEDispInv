@@ -22,6 +22,8 @@ public:
 private:
   std::vector<std::pair<double, double>> find_coarse_intv(double f,
                                                           int num_mode) const;
+  std::vector<std::pair<double, double>>
+  find_coarse_intv_raw(double f, int num_mode) const;
   double evaluate_rayleigh_velocity();
 
   // parameters for initial samplings
