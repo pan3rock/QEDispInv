@@ -1,3 +1,14 @@
+/*
+ QEDispInv: Surface Wave Dispersion Curve Computation and Inversion Toolkit
+
+ GNU General Public License, Version 3, 29 June 2007
+
+ Copyright (c) 2025 Lei Pan
+
+ Xiaofei Chen Research Group,
+ Department of Earth and Space Sciences,
+ Southern University of Science and Technology, China.
+ */
 #include "swegn96.hpp"
 
 #include <Eigen/Dense>
