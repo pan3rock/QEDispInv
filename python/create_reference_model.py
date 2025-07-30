@@ -12,7 +12,7 @@ params = {
 plt.rcParams.update(params)
 import argparse
 import numpy as np
-from scipy.interpolate import make_smoothing_spline
+from scipy.interpolate import make_smoothing_spline, interp1d
 
 
 def main():
@@ -26,18 +26,20 @@ def main():
     parser.add_argument(
         "-s", "--smooth", type=float, help="lamb for make_smooothing_spline"
     )
-    parser.add_argument(
-        "--add", type=float, default=0, help="value added to vs"
-    )
+    parser.add_argument("--dmodel", help="filename of data model")
+    parser.add_argument("--zmax", type=float)
     parser.add_argument(
         "-o", "--out", default="mref.txt", help="filename of output"
     )
+    parser.add_argument("--savefig")
     args = parser.parse_args()
     file_disp = args.file_disp
     vp2vs = args.vp2vs
+    file_datamodel = args.dmodel
     file_out = args.out
     lam = args.smooth
-    value_add = args.add
+    zmax = args.zmax
+    savefig = args.savefig
 
     disp = np.loadtxt(file_disp)
     modes = disp[:, 2].astype(int)
@@ -50,7 +52,7 @@ def main():
     dep = wavelen / 3.0
     ind = np.argsort(dep)
     dep = dep[ind]
-    c = c[ind]
+    c = c[ind] * 1.1
 
     dep = np.insert(dep, 0, 0.0)
     vs = np.insert(c, 0, c[0])
@@ -64,26 +66,30 @@ def main():
     else:
         vs2 = vs[:]
 
-    if value_add:
-        vs3 = vs2 + value_add
-    else:
-        vs3 = vs2
+    vs3 = vs2
 
-    if dep[-1] > 1.0:
+    if file_datamodel:
+        dmodel = np.loadtxt(file_datamodel)
+        model = create_model_with_dmodel(dep, vs3, dmodel)
+        pass
+    elif dep[-1] > 1.0:
         model = create_model_brocher(dep, vs3)
     else:
         model = create_model_nearsurface(dep, vs3, vp2vs)
-    np.savetxt(file_out, model, fmt="%5.0f%12.5f%12.5f%12.5f%12.5f")
+    np.savetxt(file_out, model, fmt="%5.0f%15.8f%12.5f%12.5f%12.5f")
 
     fig, ax = plt.subplots(layout="constrained")
     ax.plot(vs, dep, "k.", alpha=0.8)
-    if value_add:
-        ax.plot(vs2, dep, "b-", alpha=0.8, linewidth=2)
     ax.plot(vs3, dep, "r-", alpha=0.8, linewidth=2)
-    ax.set_ylim([dep[0], dep[-1]])
+    if zmax:
+        ax.set_ylim([dep[0], zmax])
+    else:
+        ax.set_ylim([dep[0], dep[-1]])
     ax.invert_yaxis()
     ax.set_xlabel("Vs (km/s)")
     ax.set_ylabel("Depth (km)")
+    if savefig:
+        fig.savefig(savefig, dpi=300)
     plt.show()
 
 
@@ -118,6 +124,45 @@ def create_model_nearsurface(dep, vs, vp2vs):
     model[:, 0] = np.arange(len(dep)) + 1.0
     model[:, 1] = dep
     model[:, 3] = vs
+    return model
+
+
+def create_model_with_dmodel(dep, vs, dmodel):
+    i1 = 0
+    lines = []
+    intp = interp1d(dep, vs)
+    for i in range(1, dmodel.shape[0]):
+        i2 = np.searchsorted(dep, dmodel[i, 1])
+        for j in range(i1, i2):
+            lines.append([0, dep[j], dmodel[i - 1, 2], vs[j], dmodel[i - 1, 4]])
+        i1 = i2
+
+        z1 = dmodel[i, 1] - 1.0e-7
+        z2 = dmodel[i, 1]
+        lines.append(
+            [
+                0,
+                z1,
+                dmodel[i - 1, 2],
+                intp(z1),
+                dmodel[i - 1, 4],
+            ]
+        )
+        lines.append(
+            [
+                0,
+                z2,
+                dmodel[i, 2],
+                intp(z2),
+                dmodel[i, 4],
+            ]
+        )
+
+    for j in range(i1, dep.shape[0]):
+        lines.append([0, dep[j], dmodel[i - 1, 2], vs[j], dmodel[i - 1, 4]])
+
+    model = np.asarray(lines)
+    model[:, 0] = np.arange(model.shape[0]) + 1
     return model
 
 

@@ -24,6 +24,7 @@ def main():
     parser.add_argument("--comp", default="vs")
     parser.add_argument("-m", "--mode", type=int, default=0)
     parser.add_argument("--plot_disp", action="store_true")
+    parser.add_argument("--show_cb", action="store_true")
     parser.add_argument("--cmin", type=float)
     parser.add_argument("--cmax", type=float)
     parser.add_argument("--fmin", type=float)
@@ -47,6 +48,7 @@ def main():
     vmax = args.vmax
     unit_m = args.unit_m
     file_out = args.out
+    show_colorbar = args.show_cb
 
     fh5 = h5py.File(file_ker, "r")
     disp = fh5["disp"][()]
@@ -59,12 +61,15 @@ def main():
     if comp_show == "vs":
         var_show = kvs
         label = "kvs"
+        kunit = "dimensionless"
     elif comp_show == "rho":
         var_show = krho
         label = "krho"
+        kunit = r"km $\cdot$cm$^3$/(s$\cdot$ g)"
     elif comp_show == "vp":
         var_show = kvp
         label = "kvp"
+        kunit = "dimensionless"
     else:
         raise ValueError("invalid comp")
 
@@ -93,7 +98,17 @@ def main():
     fig, ax = plt.subplots(layout="constrained")
     cmap = "seismic"
     ax.pcolormesh(
-        freqs, z, var_show, cmap=cmap, shading="auto", vmin=vmin, vmax=vmax
+        freqs,
+        z,
+        var_show,
+        cmap=cmap,
+        shading="auto",
+        vmin=vmin,
+        vmax=vmax,
+        alpha=0.8,
+        edgecolors="none",
+        antialiased=True,
+        rasterized=True,
     )
 
     if zmax is None:
@@ -125,7 +140,7 @@ def main():
         ax.tick_params("y", colors="r")
         ax.yaxis.label.set_color("r")
         ax2 = ax.twinx()
-        ax2.plot(freqs, cs, "k.-")
+        ax2.plot(freqs, cs, "k-", alpha=0.8)
         ax2.tick_params("y", colors="k")
         ax2.set_xlim([fmin, fmax])
         if cmin is not None and cmax is not None:
@@ -135,16 +150,19 @@ def main():
     if file_out:
         plt.savefig(file_out, dpi=300)
 
-    fig, ax = plt.subplots(figsize=(8, 1), layout="constrained")
-    norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
-    fig.colorbar(
-        mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
-        cax=ax,
-        orientation="horizontal",
-        label=label,
-    )
-    if file_out:
-        fig.savefig("colorbar.{:s}".format(file_out.split(".")[-1]), dpi=300)
+    if show_colorbar:
+        fig, ax = plt.subplots(figsize=(6, 0.8), layout="constrained")
+        norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+        fig.colorbar(
+            mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
+            cax=ax,
+            orientation="horizontal",
+            label=label + f" ({kunit})",
+        )
+        if file_out:
+            fig.savefig(
+                "colorbar.{:s}".format(file_out.split(".")[-1]), dpi=300
+            )
 
     plt.show()
 

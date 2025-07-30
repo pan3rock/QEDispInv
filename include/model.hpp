@@ -151,4 +151,8 @@ Eigen::ArrayXd generate_depth_by_layer_ratio(double lmin, double lmax,
                                              double r0, double rmin,
                                              double rmax, double zmax);
 
+Eigen::ArrayXd generate_depth_by_layer_ratio2(double lmin, double lmax,
+                                              double r0, double rmin,
+                                              double rmax, double zmax);
+
 #endif

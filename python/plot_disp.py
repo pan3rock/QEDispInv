@@ -26,16 +26,14 @@ if __name__ == "__main__":
     )
     parser.add_argument("--ylim", nargs=2, type=float)
     parser.add_argument("--unit_m", action="store_true", help="yaxis in m")
-    parser.add_argument("-o", "--out", default=None, help=" output figure name")
-    parser.add_argument("--dpi", type=int, default=300, help="figure dpi")
+    parser.add_argument("--savefig", default=None, help=" output figure name")
     args = parser.parse_args()
     file_disp = args.file_disp
     file_ref = args.file_ref
     use_color = args.color
     unit_m = args.unit_m
     ylim = args.ylim
-    file_out = args.out
-    dpi = args.dpi
+    savefig = args.savefig
 
     disp = np.loadtxt(file_disp)
     modes = set(disp[:, 2].astype(int))
@@ -74,6 +72,6 @@ if __name__ == "__main__":
     ax.set_xlabel("Frequency (Hz)")
     ax.set_ylabel("Phase velocity ({:s}/s)".format(unit))
 
-    if file_out:
-        fig.savefig(file_out, dpi=dpi)
+    if savefig:
+        fig.savefig(savefig, dpi=300)
     plt.show()

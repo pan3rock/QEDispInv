@@ -145,8 +145,11 @@ int main(int argc, char const *argv[]) {
     for (int i_m = 0; i_m < num_init; ++i_m) {
       if (rand_depth) {
         // z_init.push_back(generate_random_depth(nl, zmax, dintv_min));
-        z_init.push_back(generate_depth_by_layer_ratio(data.lmin, data.lmax, r0,
-                                                       rmin, rmax, zmax));
+        // z_init.push_back(generate_depth_by_layer_ratio(data.lmin, data.lmax,
+        // r0,
+        //                                                rmin, rmax, zmax));
+        z_init.push_back(generate_depth_by_layer_ratio2(data.lmin, data.lmax,
+                                                        r0, rmin, rmax, zmax));
       } else {
         z_init.push_back(model_ref.col(1));
       }

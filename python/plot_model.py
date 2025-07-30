@@ -19,11 +19,13 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument("file_model")
+    parser.add_argument("--linear", action="store_true")
     parser.add_argument("--zmax", type=float)
     parser.add_argument("-o", "--out")
     args = parser.parse_args()
     file_model = args.file_model
     zmax = args.zmax
+    show_linear = args.linear
     file_out = args.out
 
     model = np.loadtxt(file_model)
@@ -38,7 +40,10 @@ def main():
     for i in range(3):
         var = model[:, i + 2]
         var = np.append(var, var[-1])
-        (p1,) = ax.step(var, z, "-", alpha=0.7, linewidth=2)
+        if show_linear:
+            (p1,) = ax.plot(var, z, "-", alpha=0.7, linewidth=2)
+        else:
+            (p1,) = ax.step(var, z, "-", alpha=0.7, linewidth=2)
         ps.append(p1)
     ax.legend(
         ps, [r"$\rho$ (g/cm$^3$)", "Vs (km/s)", "Vp (km/s)"], loc="lower right"

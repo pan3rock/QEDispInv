@@ -308,3 +308,30 @@ Eigen::ArrayXd generate_depth_by_layer_ratio(double lmin, double lmax,
   ArrayXd depth_a = Map<ArrayXd, Unaligned>(depth.data(), depth.size());
   return depth_a;
 }
+
+Eigen::ArrayXd generate_depth_by_layer_ratio2(double lmin, double lmax,
+                                              double r0, double rmin,
+                                              double rmax, double zmax) {
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_real_distribution<> dist(0.0, 1.0);
+
+  double depmax = lmax / 2.0;
+  if (zmax > depmax)
+    depmax = zmax;
+  std::vector<double> depth{0, r0 * lmin / 2.0};
+
+  while (depth.back() < depmax) {
+    double ratio = dist(gen) * (rmax - rmin) + rmin;
+    double d = depth.back() + ratio * (depth.back() - depth[depth.size() - 2]);
+    depth.push_back(d);
+  }
+
+  ArrayXd depth_a(depth.size());
+  depth_a(0) = 0.0;
+  for (size_t i = 0; i < depth.size() - 1; ++i) {
+    depth_a(i + 1) = dist(gen) * (depth[i + 1] - depth[i]) + depth[i];
+  }
+
+  return depth_a;
+}

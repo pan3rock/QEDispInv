@@ -26,6 +26,7 @@ def main():
     parser.add_argument("--plot_fit", action="store_true")
     parser.add_argument("--full_disp", action="store_true")
     parser.add_argument("--xlim", nargs=2, type=float)
+    parser.add_argument("--savefig")
     args = parser.parse_args()
     file_inv = args.file_inv
     show_model = args.plot_model
@@ -34,6 +35,7 @@ def main():
     show_full_disp = args.full_disp
     file_model_data = args.model_data
     xlim = args.xlim
+    savefig = args.savefig
 
     fh5 = h5py.File(file_inv, "r")
     z_sample = fh5["z_sample"][()]
@@ -71,6 +73,8 @@ def main():
     if show_fitness:
         plot_fitness(fitness)
 
+    if savefig:
+        plt.savefig(savefig, dpi=300)
     plt.show()
 
 
