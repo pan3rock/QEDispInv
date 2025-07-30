@@ -24,7 +24,7 @@ def main():
     parser.add_argument("--extra", action="store_true")
     parser.add_argument("--N", action="store_true")
     parser.add_argument("--xlim", nargs=2, type=float)
-    parser.add_argument("-o", "--out", default=None, help=" output figure name")
+    parser.add_argument("--savefig", help="output figure name")
     args = parser.parse_args()
     file_sfunc = args.file_sfunc
     show_sign = args.sign
@@ -32,7 +32,7 @@ def main():
     show_extra = args.extra
     show_N = args.N
     xlim = args.xlim
-    file_out = args.out
+    savefig = args.savefig
 
     fh5 = h5py.File(file_sfunc, "r")
     f = fh5["f"][()]
@@ -84,8 +84,8 @@ def main():
     ax.legend(handles, labels, loc="lower right")
     ax.set_xlabel("Phase velocity (km/s)")
     ax.set_ylabel("Dispersion function")
-    if file_out:
-        fig.savefig(file_out, dpi=300)
+    if savefig:
+        fig.savefig(savefig, dpi=300)
     plt.show()
 
 
