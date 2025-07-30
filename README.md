@@ -16,8 +16,16 @@ complex geological models.
 The program can be cloned from the GitHub repository:
 ```bash
 git clone https://github.com/your-username/QEDispInv.git
+cd QEDispInv
+git submodule update --init
 ```
-Please refer to the `INSTALL` page in wiki for compilation instructions and dependencies.
+Please refer to the [`Install`](doc/INSTALL.md) document for compilation instructions and dependencies.
+
+## Tutorial
+A detailed tutorial covering step-by-step instructions for using QEDispInv, including forward 
+modeling setup, inversion parameter configuration, result visualization, and example walkthroughs, 
+is available in the [`Tutorial`](doc/TUTORIAL.md) document. This tutorial is designed to help new
+users quickly get started with the toolkit and explore its full functionality.
 
 ## Usage
 QEDispInv provides command-line interfaces for both forward and inversion modules:

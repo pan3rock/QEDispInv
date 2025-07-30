@@ -1,0 +1,10 @@
+[secfunc]
+file_model = "model_data.txt"
+nc = 10000
+
+[forward]
+file_model = "model_data.txt"
+fmin = 0.1
+fmax = 100.0
+nf = 1000
+

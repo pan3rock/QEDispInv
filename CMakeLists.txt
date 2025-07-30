@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10.0)
-project(dctomo-mcg VERSION 0.1.0 LANGUAGES CXX Fortran)
+project(QEDispInv VERSION 1.0.0 LANGUAGES CXX Fortran)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -16,7 +16,7 @@ if (USE_OPENMP)
 endif()
 
 # Eigen
-find_package(Eigen3 3.4 REQUIRED NO_MODULE)
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 include_directories(${EIGEN3_INCLUDE_DIR})
 
 # fmt
