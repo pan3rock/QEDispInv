@@ -1,3 +1,5 @@
+## Tutorial for Secular Function Computation
+
 ### The Secular Function (Dispersion Function)
 
 The secular function—often referred to as the dispersion function—has roots that correspond to the phase velocity values of dispersion curves at specific frequencies.

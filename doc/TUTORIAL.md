@@ -18,8 +18,8 @@ This example validates the framework’s performance in deeper structures using 
 
 # Tutorial
 
-## [Secular Function Computation](./secfunc.md)
+- [**Secular Function Computation**](./secfunc.md)
 
-## [Forward Computation](./forward.md)
+- [**Forward Computation**](./forward.md)
 
-## [Inversion](./inversion.md)
+- [**Inversion**](./inversion.md)

@@ -1,3 +1,5 @@
+## Tutorial for Forward Computation
+
 ### Calculating Dispersion Curves
 
 ```bash
@@ -72,7 +74,7 @@ To compute dispersion curves using the provided tool, follow these commands base
 
 To visualize the computed dispersion curves, follow these steps using the provided Python script:
 
-1. **First, compute the complete dispersion curves** using the forward modeling tool with a sufficiently high mode order (e.g., up to mode 1000) to capture all relevant modes:
+1. **Compute the complete dispersion curves** using the forward modeling tool with a sufficiently high mode order (e.g., up to mode 1000) to capture all relevant modes:
 
    ```bash
    ../../bin/forward -m 1000

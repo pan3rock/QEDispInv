@@ -104,8 +104,8 @@ Choose one of the following methods based on your preference:
 
 ```bash
 # Create a new environment with Python 3.11 (optional but recommended)
-conda create -n qedisinv python=3.11
-conda activate qedisinv
+conda create -n qedispinv python=3.11
+conda activate qedispinv
 
 # Install dependencies
 conda install numpy matplotlib scipy h5py
@@ -115,27 +115,11 @@ conda install numpy matplotlib scipy h5py
 
 ```bash
 # Create a new environment with Python 3.11 (optional but recommended)
-mamba create -n qedisinv python=3.11
-mamba activate qedisinv
+mamba create -n qedispinv python=3.11
+mamba activate qedispinv
 
 # Install dependencies
 mamba install numpy matplotlib scipy h5py
-```
-
-#### Using Pip
-
-```bash
-# Create a virtual environment with Python 3.11 (optional but recommended)
-python3.11 -m venv qedisinv-env
-
-# Activate the environment
-# On macOS/Linux:
-source qedisinv-env/bin/activate
-# On Windows:
-qedisinv-env\Scripts\activate
-
-# Install dependencies
-pip install numpy matplotlib scipy h5py
 ```
 
 To verify successful installation:
