@@ -12,16 +12,16 @@ The `[inversion]` block in `config.toml` (as shown in the figure) contains criti
 
 1. **Model Conversion (`vs2model`)**
 
-   - `vs2model`: Specifies how shear-wave velocity ($V_S$) is converted to other parameters (e.g., $V_P$ and density). Further Explanation of `vs2model` is [here](./vs2model.md).
+   - `vs2model = "fixvprho"`: Specifies how shear-wave velocity ($V_S$) is converted to other parameters (e.g., $V_P$ and density). Further Explanation of `vs2model` is [here](./vs2model.md).
    - **Supported Modes**:
-     - `fixvprho`: Fixes \(V_P\) and density to values from the reference model (`model_ref`), useful when these parameters are well-constrained.
-     - `nearsurface`: Optimized for shallow models (meters to hundreds of meters), requiring the `vp2vs` parameter to define \(V_P/V_S\) ratios.
-     - `gardner`: Applies Gardner’s relation for deeper models (kilometers), where density is derived from \(V_P\) (\(\rho = 0.31 V_P^{0.25}\)).
-     - `brocher05`: Uses Brocher’s (2005) empirical relations for crustal to upper-mantle models (tens of kilometers), linking \(V_P\), \(V_S\), and density.
+     - `fixvprho`: Fixes $V_P$ and density to values from the reference model (`model_ref`), useful when these parameters are well-constrained.
+     - `nearsurface`: Optimized for shallow models (meters to hundreds of meters), requiring the `vp2vs` parameter to define $V_P/V_S$ ratios.
+     - `gardner`: Applies Gardner’s relation for deeper models (kilometers), where density is derived from $V_P$ ($\rho = 0.31 V_P^{0.25}$).
+     - `brocher05`: Uses Brocher’s (2005) empirical relations for crustal to upper-mantle models (tens of kilometers), linking $V_P$, $V_S$, and density.
 
 2. **Reference Model (`model_ref`)**
 
-   - `model_ref = "mref.txt"`: Path to a text file containing a starting/reference model (e.g., a 1D layered model with depth, \(V_S\), \(V_P\), and density). This guides the inversion toward geologically reasonable solutions.
+   - `model_ref = "mref.txt"`: Path to a text file containing a starting/reference model (e.g., a 1D layered model with depth, $V_S$, $V_P$, and density). This guides the inversion toward geologically reasonable solutions.
 
 3. **Velocity Uncertainty (`vs_width`)**
 
@@ -57,9 +57,11 @@ The `[inversion]` block in `config.toml` (as shown in the figure) contains criti
 
 <img src="figures/layer.jpg" width="600" alt="layer">
 
+_Schematic illustration of the layering definition process for surface wave inversion._
+
 10. **Parameter Ratio (`vs2vp`)**
 
-    - `vs2vp = 3.0`: Fixed ratio of \(V_S\) to \(V_P\) (e.g., \(V_P = 3.0 V_S\)), simplifying inversion by reducing free parameters.
+    - `vs2vp = 3.0`: Fixed ratio of $V_S$ to $V_P$ (e.g., $V_P = 3.0 V_S$), simplifying inversion by reducing free parameters.
 
 11. **Data Weights (`weight`)**
     - `weight = [4.0, 1.0, 1.0, 1.0]`: Weights applied to different mode (e.g., fundamental vs. higher modes), prioritizing high-confidence data.
@@ -84,13 +86,13 @@ The reference model provides a starting constraint for subsurface structure, gui
 
 ##### **Option 1: User-Defined Reference Model**
 
-Users can manually create a text file (e.g., `mref.txt`) with a 1D layered structure. The file typically includes columns for index of layers, depth (km), density (g/cm$^3$), $V_S$ (km/s) and $V_P$ (km/s), sorted by increasing depth:
+Users can manually create a text file (e.g., `mref.txt`) with a 1D layered structure. The file typically includes columns for index of layers, depth (km), density (g/cm^3), $V_S$ (km/s) and $V_P$ (km/s), sorted by increasing depth:
 
-| No. | Depth (km) | Density (g/cm$^3$) | $V_S$ (km/s) | $V_P$ (km/s) |
-| --- | ---------- | ------------------ | ------------ | ------------ |
-| 1   | 0.0        | 1.8                | 0.3          | 0.6          |
-| 2   | 0.5        | 2.2                | 0.8          | 1.6          |
-| 3   | 2.0        | 2.7                | 2.5          | 4.5          |
+| No. | Depth (km) | Density (g/cm^3) | $V_S$ (km/s) | $V_P$ (km/s) |
+| --- | ---------- | ---------------- | ------------ | ------------ |
+| 1   | 0.0        | 1.8              | 0.3          | 0.6          |
+| 2   | 0.5        | 2.2              | 0.8          | 1.6          |
+| 3   | 2.0        | 2.7              | 2.5          | 4.5          |
 
 **Example snippet**:
 
@@ -111,6 +113,8 @@ For users without a predefined reference model, the tool provides a script to ge
 This script infers a plausible 1D model by inverting the fundamental-mode data, leveraging the strong sensitivity of surface waves to shallow $V_S$ structure.
 
 <img src="figures/model_init.jpg" width="600" alt="model_init">
+
+_(a) Fundamental-mode theoretical dispersion curves of Model~1. The black dots represent key data points on the dispersion curve. (b) Initial shear wave velocity derived from phase velocity values. The black dots in this figure correspond to the positions of the black dots in (a) after converting the frequency-phase velocity data to depth-shear wave velocity data. The red line shows the initial shear wave velocity model obtained by linearly interpolating the black dots, which is processed to avoid abrupt velocity jumps.​_
 
 - **Customization options**:
   - **Smoothing**: Add the `-s` flag with a smoothing parameter (e.g., `1.0e-8`) to reduce artificial discontinuities in the generated model. This is critical for dispersion curves that would otherwise produce abrupt high/low-velocity interfaces, which might introduce non-physical layers during inversion:

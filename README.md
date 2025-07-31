@@ -47,7 +47,7 @@ Detailed usage examples and parameter specifications are available in the user m
 If you use QEDispInv in your research, please cite this work as follows:
 
 - Lei Pan, Xiaofei Chen. Surface Wave Dispersion Curve Computation and Inversion: A Framework Integrating Quadratic Extrema Interpolation and Randomized Layering with Multiple Initial Models. ESS Open Archive.
-- Pan, L., & Chen, X. (2025). Efficient Computation of Dispersion Curves in Low‐Velocity‐Layered Half‐Spaces. Bulletin of the Seismological Society of America.
+- Pan, L., & Chen, X. (2025). Efficient Computation of Dispersion Curves in Low‐Velocity‐Layered Half‐Spaces. Bulletin of the Seismological Society of America, 115 (4), 1381–1391.
 - Pan, L., Chen, X., Wang, J., Yang, Z., & Zhang, D. (2019). Sensitivity analysis of dispersion curves of Rayleigh waves with fundamental and higher modes. Geophysical Journal International, 216(2), 1276-1303.
 
 ## Repository Link
