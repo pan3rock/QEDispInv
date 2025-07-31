@@ -21,7 +21,7 @@ def main():
     )
     parser.add_argument("file_disp", help="filename of dispersion curves")
     parser.add_argument(
-        "--vp2vs", type=float, default=2.0, help="ratio of vp and vs"
+        "--vp2vs", type=float, default=1.732, help="ratio of vp and vs"
     )
     parser.add_argument(
         "-s", "--smooth", type=float, help="lamb for make_smooothing_spline"
