@@ -145,14 +145,8 @@ private:
   const double c_ = 1.54840433;
 };
 
-Eigen::ArrayXd generate_random_depth(int N, double zmax, double min_gap);
-
 Eigen::ArrayXd generate_depth_by_layer_ratio(double lmin, double lmax,
                                              double r0, double rmin,
                                              double rmax, double zmax);
-
-Eigen::ArrayXd generate_depth_by_layer_ratio2(double lmin, double lmax,
-                                              double r0, double rmin,
-                                              double rmax, double zmax);
 
 #endif

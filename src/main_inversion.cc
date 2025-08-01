@@ -89,21 +89,10 @@ int main(int argc, char const *argv[]) {
   const auto num_noise = toml::find<int>(conf_inv, "num_noise");
   const auto rand_depth = toml::find<bool>(conf_inv, "rand_depth");
   const auto rand_vs = toml::find<bool>(conf_inv, "rand_vs");
-  const auto dintv_min = toml::find<double>(conf_inv, "dintv_min");
   auto zmax = toml::find<double>(conf_inv, "zmax");
   const auto r0 = toml::find<double>(conf_inv, "r0");
   const auto rmin = toml::find<double>(conf_inv, "rmin");
   const auto rmax = toml::find<double>(conf_inv, "rmax");
-
-  int nl;
-  if (rand_depth) {
-    nl = toml::find<int>(conf_inv, "nlayer");
-  } else {
-    nl = model_ref.rows();
-    double zn = model_ref(nl - 1, 1);
-    if (zmax < zn)
-      zmax = zn;
-  }
 
   Data data(data_input);
   if (num_noise > 1 && data_input.cols() < 4) {
@@ -134,12 +123,8 @@ int main(int argc, char const *argv[]) {
   } else {
     for (int i_m = 0; i_m < num_init; ++i_m) {
       if (rand_depth) {
-        // z_init.push_back(generate_random_depth(nl, zmax, dintv_min));
-        // z_init.push_back(generate_depth_by_layer_ratio(data.lmin, data.lmax,
-        // r0,
-        //                                                rmin, rmax, zmax));
-        z_init.push_back(generate_depth_by_layer_ratio2(data.lmin, data.lmax,
-                                                        r0, rmin, rmax, zmax));
+        z_init.push_back(generate_depth_by_layer_ratio(data.lmin, data.lmax, r0,
+                                                       rmin, rmax, zmax));
       } else {
         z_init.push_back(model_ref.col(1));
       }
@@ -182,7 +167,6 @@ int main(int argc, char const *argv[]) {
         tmp(nl) = cmax + vs_width;
         vs_ub[i_m] = tmp;
       }
-      ++nl;
     }
   }
 

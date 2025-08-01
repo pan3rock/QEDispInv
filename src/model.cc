@@ -13,7 +13,6 @@
 
 #include <Eigen/Dense>
 #include <fmt/format.h>
-#include <iostream>
 #include <map>
 #include <random>
 
@@ -235,94 +234,9 @@ Dict NearSurface::derivative(const Eigen::ArrayXd &vs) {
   return res;
 }
 
-Eigen::ArrayXd generate_random_depth(int N, double zmax, double min_gap_raw) {
-  double min_gap = min_gap_raw / zmax;
-  if (N < 2) {
-    throw std::invalid_argument("N must be at least 2");
-  }
-  if (min_gap <= 0) {
-    throw std::invalid_argument("min_gap must be positive");
-  }
-  if (min_gap * (N - 1) >= 1.0) {
-    throw std::invalid_argument("min_gap too large for given N");
-  }
-
-  std::random_device rd;
-  std::mt19937 rng(rd());
-  std::uniform_real_distribution<double> dist(0.0, 1.0);
-
-  double total_min_gap = min_gap * (N - 1);
-  double leftover = 1.0 - total_min_gap - 1e-9;
-
-  std::vector<double> increments(N - 1);
-  double sum = 0.0;
-  for (int i = 0; i < N - 1; ++i) {
-    increments[i] = dist(rng);
-    sum += increments[i];
-  }
-
-  if (sum > 0) {
-    for (int i = 0; i < N - 1; ++i) {
-      increments[i] = (increments[i] / sum) * leftover;
-    }
-  } else {
-    double avg_increment = leftover / (N - 1);
-    for (int i = 0; i < N - 1; ++i) {
-      increments[i] = avg_increment;
-    }
-  }
-
-  std::vector<double> sequence;
-  sequence.reserve(N);
-  sequence.push_back(0.0);
-
-  double current = 0.0;
-  for (int i = 0; i < N - 1; ++i) {
-    current += min_gap + increments[i];
-    sequence.push_back(current);
-  }
-
-  std::vector<double> depth;
-  for (int i = 0; i < N; ++i) {
-    depth.push_back(sequence[i]);
-  }
-
-  ArrayXd ret = Map<ArrayXd, Unaligned>(depth.data(), depth.size());
-  ret *= zmax;
-
-  return ret;
-}
-
 Eigen::ArrayXd generate_depth_by_layer_ratio(double lmin, double lmax,
                                              double r0, double rmin,
                                              double rmax, double zmax) {
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::uniform_real_distribution<> dist(0.0, 1.0);
-
-  double depmax = lmax / 2.0;
-  if (zmax > depmax)
-    depmax = zmax;
-  std::vector<double> depth{0.0};
-
-  double ratio = dist(gen) * (rmax - rmin) + rmin;
-  depth.push_back(ratio * lmin / 3.0 * r0);
-  double d = depth.back() + ratio * depth.back();
-  depth.push_back(d);
-
-  while (depth.back() < depmax) {
-    double ratio = dist(gen) * (rmax - rmin) + rmin;
-    d = depth.back() + ratio * (depth.back() - depth[depth.size() - 2]);
-    depth.push_back(d);
-  }
-
-  ArrayXd depth_a = Map<ArrayXd, Unaligned>(depth.data(), depth.size());
-  return depth_a;
-}
-
-Eigen::ArrayXd generate_depth_by_layer_ratio2(double lmin, double lmax,
-                                              double r0, double rmin,
-                                              double rmax, double zmax) {
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_real_distribution<> dist(0.0, 1.0);

@@ -4,29 +4,30 @@ nc = 10000
 
 [forward]
 file_model = "model_data.txt"
-fmin = 1.0
-fmax = 100.0
+fmin = 0.01
+fmax = 0.5
 nf = 1000
 
 [inversion]
-#vs2model = "NearSurface"
-vs2model = "FixVpRho"
+vs2model = "brocher05"
 model_ref = "mref.txt"
 
-vs_width = 0.7
-lambda = 1.0e-2
+vs_width = 1.2
+lambda = 1.0e-1
 reg_type = 2
 
 num_init = 100
 num_noise = 1
 rand_depth = true
 rand_vs = false
-zmax = 0.025
+zmax = 120.0
 
-r0 = 0.5
+r0 = 0.8
 rmin = 1.0
 rmax = 1.5
 
-#vs2vp = 3.0
-
 weight = [4.0, 1.0, 1.0, 1.0]
+
+sigma = [0.1, 0.2, 0.2, 0.2]
+
+
