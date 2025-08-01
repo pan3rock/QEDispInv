@@ -158,8 +158,11 @@ def create_model_with_dmodel(dep, vs, dmodel):
             ]
         )
 
+    nl_d = dmodel.shape[0]
     for j in range(i1, dep.shape[0]):
-        lines.append([0, dep[j], dmodel[i - 1, 2], vs[j], dmodel[i - 1, 4]])
+        lines.append(
+            [0, dep[j], dmodel[nl_d - 1, 2], vs[j], dmodel[nl_d - 1, 4]]
+        )
 
     model = np.asarray(lines)
     model[:, 0] = np.arange(model.shape[0]) + 1
