@@ -56,7 +56,7 @@ Install CMake (required for building the project):
 1. **Clone the Repository**
 
    ```bash
-   git clone https://github.com/your-username/QEDispInv.git
+   git clone https://github.com/pan3rock/QEDispInv.git
    cd QEDispInv
    ```
 
