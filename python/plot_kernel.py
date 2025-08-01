@@ -20,20 +20,41 @@ def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    parser.add_argument("file_ker")
-    parser.add_argument("--comp", default="vs")
-    parser.add_argument("-m", "--mode", type=int, default=0)
-    parser.add_argument("--plot_disp", action="store_true")
-    parser.add_argument("--show_cb", action="store_true")
+    parser.add_argument(
+        "file_ker", help="filename of computed sensitivity kernel"
+    )
+    parser.add_argument(
+        "--comp", default="vs", help="component of kernel (vp, vs, rho)"
+    )
+    parser.add_argument(
+        "-m",
+        "--mode",
+        type=int,
+        default=0,
+        help="mode of the dispersion curve to show",
+    )
+    parser.add_argument(
+        "--plot_disp", action="store_true", help="show dispersion curves"
+    )
+    parser.add_argument(
+        "--show_cb", action="store_true", help="show the colorbar"
+    )
     parser.add_argument("--cmin", type=float)
     parser.add_argument("--cmax", type=float)
     parser.add_argument("--fmin", type=float)
     parser.add_argument("--fmax", type=float)
     parser.add_argument("--zmax", type=float)
     parser.add_argument("--vmax", type=float)
-    parser.add_argument("--unit_m", action="store_true")
-    parser.add_argument("--sum", action="store_true")
-    parser.add_argument("-o", "--out")
+    parser.add_argument(
+        "--unit_m", action="store_true", help="use the unit of meter"
+    )
+    parser.add_argument(
+        "--sum", action="store_true", help="sum along the frequency"
+    )
+    parser.add_argument(
+        "--show_last", action="store_true", help="show the last layer"
+    )
+    parser.add_argument("--savefig", help="filename of output figure")
     args = parser.parse_args()
     file_ker = args.file_ker
     comp_show = args.comp
@@ -47,8 +68,9 @@ def main():
     zmax = args.zmax
     vmax = args.vmax
     unit_m = args.unit_m
-    file_out = args.out
     show_colorbar = args.show_cb
+    show_last = args.show_last
+    savefig = args.savefig
 
     fh5 = h5py.File(file_ker, "r")
     disp = fh5["disp"][()]
@@ -83,6 +105,13 @@ def main():
     if show_sum:
         plot_sum(z, var_show, disp, unit, zmax)
         return
+
+    if show_last:
+        var_show = np.vstack([var_show, var_show[-1, :]])
+        z = np.append(z, z[-1] * 1.5)
+    else:
+        var_show = var_show[:-1, :]
+        z = z[:-1]
 
     if vmax is None:
         vmax = np.amax(np.abs(var_show))
@@ -147,8 +176,8 @@ def main():
             ax2.set_ylim([cmin, cmax])
         ax2.set_ylabel(f"Phase velocity ({unit}/s)")
 
-    if file_out:
-        plt.savefig(file_out, dpi=300)
+    if savefig:
+        plt.savefig(savefig, dpi=300)
 
     if show_colorbar:
         fig, ax = plt.subplots(figsize=(6, 0.8), layout="constrained")
@@ -159,10 +188,8 @@ def main():
             orientation="horizontal",
             label=label + f" ({kunit})",
         )
-        if file_out:
-            fig.savefig(
-                "colorbar.{:s}".format(file_out.split(".")[-1]), dpi=300
-            )
+        if savefig:
+            fig.savefig("colorbar.{:s}".format(savefig.split(".")[-1]), dpi=300)
 
     plt.show()
 

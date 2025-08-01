@@ -21,12 +21,12 @@ def main():
     parser.add_argument("file_model")
     parser.add_argument("--linear", action="store_true")
     parser.add_argument("--zmax", type=float)
-    parser.add_argument("-o", "--out")
+    parser.add_argument("--savefig")
     args = parser.parse_args()
     file_model = args.file_model
     zmax = args.zmax
     show_linear = args.linear
-    file_out = args.out
+    savefig = args.savefig
 
     model = np.loadtxt(file_model)
     z = model[:, 1]
@@ -54,8 +54,8 @@ def main():
         ax.set_ylim([z[0], z[-1]])
     ax.set_ylabel("Depth (km)")
     ax.invert_yaxis()
-    if file_out:
-        fig.savefig(file_out, dpi=300)
+    if savefig:
+        fig.savefig(savefig, dpi=300)
     plt.show()
 
 
