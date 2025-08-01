@@ -84,16 +84,16 @@ def main():
         plot_sum(z, var_show, disp, unit, zmax)
         return
 
+    if vmax is None:
+        vmax = np.amax(np.abs(var_show))
+    vmin = -vmax
+
     modes = disp[:, 2].astype(int)
     idx = modes == mode_show
     disp = disp[idx]
     var_show = var_show[:, idx]
     freqs = disp[:, 0]
     cs = disp[:, 1]
-
-    if vmax is None:
-        vmax = np.amax(np.abs(var_show))
-    vmin = -vmax
 
     fig, ax = plt.subplots(layout="constrained")
     cmap = "seismic"
