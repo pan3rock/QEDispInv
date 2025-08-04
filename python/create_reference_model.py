@@ -31,7 +31,7 @@ def main():
     parser.add_argument(
         "-o", "--out", default="mref.txt", help="filename of output"
     )
-    parser.add_argument("--savefig")
+    parser.add_argument("--savefig", help="name of the output figure file")
     args = parser.parse_args()
     file_disp = args.file_disp
     vp2vs = args.vp2vs

@@ -98,7 +98,7 @@ Further details on each option are available in the help output, encouraging use
 
 To examine the computed sensitivity kernels using the Python visualization tool, follow these steps:
 
-1. **First, calculate the sensitivity kernels** for modes 0 to 2 (3 modes total) using the forward modeling tool with the `--compute_kernel` flag:
+1. **Calculate the sensitivity kernels** for modes 0 to 2 (3 modes total) using the forward modeling tool with the `--compute_kernel` flag:
 
    ```bash
    ../../bin/forward -m 2 --compute_kernel

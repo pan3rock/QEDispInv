@@ -54,7 +54,7 @@ def main():
     parser.add_argument(
         "--nolast", action="store_true", help="without showing the last layer"
     )
-    parser.add_argument("--savefig", help="filename of output figure")
+    parser.add_argument("--savefig", help="name of the output figure file")
     args = parser.parse_args()
     file_ker = args.file_ker
     comp_show = args.comp

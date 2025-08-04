@@ -8,8 +8,12 @@ def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    parser.add_argument("file_inv")
-    parser.add_argument("--step", action="store_true")
+    parser.add_argument(
+        "file_inv", help="filename of hdf5 file from the inversion result"
+    )
+    parser.add_argument(
+        "--step", action="store_true", help="to generate stepwise model"
+    )
     parser.add_argument("-o", "--out")
     args = parser.parse_args()
     file_inv = args.file_inv

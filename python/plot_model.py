@@ -18,10 +18,12 @@ def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    parser.add_argument("file_model")
-    parser.add_argument("--linear", action="store_true")
-    parser.add_argument("--zmax", type=float)
-    parser.add_argument("--savefig")
+    parser.add_argument("file_model", help="name of the model file")
+    parser.add_argument(
+        "--linear", action="store_true", help="show model use linear plotting"
+    )
+    parser.add_argument("--zmax", type=float, help="zmax for plotting")
+    parser.add_argument("--savefig", help="name of the output figure file")
     args = parser.parse_args()
     file_model = args.file_model
     zmax = args.zmax

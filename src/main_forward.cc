@@ -26,7 +26,7 @@
 using namespace Eigen;
 
 int main(int argc, char const *argv[]) {
-  CLI::App app{"Calculating dispersion curves."};
+  CLI::App app{"Calculate dispersion curves given a model."};
 
   std::string file_config = "config.toml";
   app.add_option("-c,--config", file_config, "toml-type configure file");

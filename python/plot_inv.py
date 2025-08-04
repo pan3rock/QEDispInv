@@ -19,14 +19,39 @@ def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    parser.add_argument("file_inv")
-    parser.add_argument("--plot_model", action="store_true")
-    parser.add_argument("-d", "--model_data")
-    parser.add_argument("--plot_disp", action="store_true")
-    parser.add_argument("--plot_fit", action="store_true")
-    parser.add_argument("--full_disp", action="store_true")
-    parser.add_argument("--xlim", nargs=2, type=float)
-    parser.add_argument("--savefig")
+    parser.add_argument("file_inv", help="filename of inversion results")
+    parser.add_argument(
+        "--plot_model",
+        action="store_true",
+        help="display the subsurface model (e.g., Vs vs. depth)",
+    )
+    parser.add_argument(
+        "-d",
+        "--model_data",
+        help="overlay a reference or true model for validation (useful in synthetic tests)",
+    )
+    parser.add_argument(
+        "--plot_disp",
+        action="store_true",
+        help="overlay the observed data with predicted dispersion curves from the inverted model",
+    )
+    parser.add_argument(
+        "--plot_fit",
+        action="store_true",
+        help="plot the fitness sorted in descending order",
+    )
+    parser.add_argument(
+        "--full_disp",
+        action="store_true",
+        help="show all dispersion curves at modes according to the data file",
+    )
+    parser.add_argument(
+        "--xlim",
+        nargs=2,
+        type=float,
+        help="to set the limits (range) of the x-axis",
+    )
+    parser.add_argument("--savefig", help="name of the output figure file")
     args = parser.parse_args()
     file_inv = args.file_inv
     show_model = args.plot_model

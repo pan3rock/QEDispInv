@@ -19,7 +19,7 @@ complex geological models.
 The program can be cloned from the GitHub repository:
 
 ```bash
-git clone https://github.com/your-username/QEDispInv.git
+git clone https://github.com/pan3rock/QEDispInv.git
 cd QEDispInv
 git submodule update --init
 ```
@@ -40,7 +40,7 @@ QEDispInv provides command-line interfaces for both forward and inversion module
 - **Forward Modeling**: Compute dispersion curves for a given subsurface model using the quadratic extrema interpolation method.
 - **Inversion**: Perform inversion of observed dispersion curves to derive shear-wave velocity profiles, incorporating the wavelength-constrained layering and empirical relationships described in this work.
 
-Detailed usage examples and parameter specifications are available in the user manual.
+Detailed usage examples and parameter specifications are available in the [`Tutorial`](doc/TUTORIAL.md).
 
 ## Citation
 

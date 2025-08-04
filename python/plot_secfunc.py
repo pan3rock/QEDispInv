@@ -17,14 +17,40 @@ plt.rcParams.update(params)
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("file_sfunc")
-    parser.add_argument("--sign", action="store_true")
-    parser.add_argument("--sample", action="store_true")
-    parser.add_argument("--extra", action="store_true")
-    parser.add_argument("--N", action="store_true")
-    parser.add_argument("--xlim", nargs=2, type=float)
-    parser.add_argument("--savefig", help="output figure name")
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument(
+        "file_sfunc",
+        help="visualize the dispersion function and its key features",
+    )
+    parser.add_argument(
+        "--sign",
+        action="store_true",
+        help="apply a sign transformation to the dispersion function",
+    )
+    parser.add_argument(
+        "--sample",
+        action="store_true",
+        help="display the automatically generated initial sampling points",
+    )
+    parser.add_argument(
+        "--extra",
+        action="store_true",
+        help="visualize the supplementary points added by the quadratic extrema interpolation method",
+    )
+    parser.add_argument(
+        "--N",
+        action="store_true",
+        help="display changes in the parameter N, which governs the initial sampling strategy",
+    )
+    parser.add_argument(
+        "--xlim",
+        nargs=2,
+        type=float,
+        help="to set the limits (range) of the x-axis",
+    )
+    parser.add_argument("--savefig", help="name of the output figure file")
     args = parser.parse_args()
     file_sfunc = args.file_sfunc
     show_sign = args.sign

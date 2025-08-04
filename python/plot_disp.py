@@ -15,8 +15,10 @@ plt.rcParams.update(params)
 
 
 if __name__ == "__main__":
-    msg = "plot dispersion curves"
-    parser = argparse.ArgumentParser(description=msg)
+    parser = argparse.ArgumentParser(
+        description="plot dispersion curves",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     parser.add_argument(
         "file_disp", default=None, help="file of dispersion curves"
     )
@@ -26,7 +28,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--ylim", nargs=2, type=float)
     parser.add_argument("--unit_m", action="store_true", help="yaxis in m")
-    parser.add_argument("--savefig", default=None, help=" output figure name")
+    parser.add_argument("--savefig", help="name of the output figure file")
     args = parser.parse_args()
     file_disp = args.file_disp
     file_ref = args.file_ref

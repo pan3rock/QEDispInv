@@ -26,6 +26,8 @@ Install or update compilers if needed:
 - **Arch Linux**: `sudo pacman -S gcc clang`
 - **macOS (Homebrew)**: `brew install gcc llvm`
 
+Typically, installing GCC will also install gfortran at the same time.
+
 ### 2. Required Libraries
 
 #### OpenMP
@@ -125,7 +127,7 @@ mamba install numpy matplotlib scipy h5py
 To verify successful installation:
 
 ```bash
-python -c "import numpy, matplotlib, scipy, h5py; print('All dependencies installed successfully with Python', sys.version.split()[0])"
+python -c "import numpy, matplotlib, scipy, h5py, sys; print('All dependencies installed successfully with Python', sys.version.split()[0])"
 ```
 
 This will confirm both the successful installation of required libraries.
