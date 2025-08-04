@@ -52,7 +52,7 @@ def main():
         "--sum", action="store_true", help="sum along the frequency"
     )
     parser.add_argument(
-        "--show_last", action="store_true", help="show the last layer"
+        "--nolast", action="store_true", help="without showing the last layer"
     )
     parser.add_argument("--savefig", help="filename of output figure")
     args = parser.parse_args()
@@ -69,7 +69,7 @@ def main():
     vmax = args.vmax
     unit_m = args.unit_m
     show_colorbar = args.show_cb
-    show_last = args.show_last
+    nolast = args.nolast
     savefig = args.savefig
 
     fh5 = h5py.File(file_ker, "r")
@@ -106,12 +106,12 @@ def main():
         plot_sum(z, var_show, disp, unit, zmax)
         return
 
-    if show_last:
-        var_show = np.vstack([var_show, var_show[-1, :]])
-        z = np.append(z, z[-1] * 1.5)
-    else:
+    if nolast:
         var_show = var_show[:-1, :]
         z = z[:-1]
+    else:
+        var_show = np.vstack([var_show, var_show[-1, :]])
+        z = np.append(z, z[-1] * 1.5)
 
     if vmax is None:
         vmax = np.amax(np.abs(var_show))
