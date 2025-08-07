@@ -66,3 +66,5 @@ Initial coarse sampling points $c_j$ are determined by solving $N(c) = j \vareps
 <img src="figures/sf_ext.jpg" width="600" alt="secfunc-sample-ext">
 
 This reveals how additional points are inserted between closely spaced roots, preventing missed detections in critical regions.
+
+[**Back to previous page**](./TUTORIAL.md)

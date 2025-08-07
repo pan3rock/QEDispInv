@@ -42,3 +42,6 @@ This example validates the framework’s performance in deeper structures using 
 - [**Forward Computation**](./forward.md)
 
 - [**Inversion**](./inversion.md)
+
+
+[**Back to previous page**](../README.md)

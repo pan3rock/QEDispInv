@@ -294,11 +294,8 @@ double SecularFunction::evaluate_sh(double f, double c) {
 
     double e10 = e1 * cosq + e2 * xmu * z;
     double e20 = e1 * y / xmu + e2 * cosq;
-    double norm = std::max(abs(e10), abs(e20));
-    if (norm > 1.0e-40) {
-      e1 = e10 / norm;
-      e2 = e20 / norm;
-    }
+    e1 = e10;
+    e2 = e20;
   }
   return e1;
 }

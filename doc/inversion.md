@@ -258,3 +258,5 @@ By default, the inversion uses 100 depth sampling points to parameterize the mod
 
 - The 100 linear depth samples are translated into a stepwise layer structure, which is an approximation of the original continuous model.
 - These discretization errors can propagate to the dispersion curve calculation, causing subtle mismatches even if the median model itself is representative.
+
+[**Back to previous page**](./TUTORIAL.md)
