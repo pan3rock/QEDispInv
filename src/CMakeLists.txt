@@ -54,15 +54,9 @@ target_link_libraries(inversion
     HighFive
     lbfgspp
     timer
+    MPI::MPI_CXX
 )
 
 if(ENABLE_DEBUG)
     target_compile_definitions(inversion PRIVATE DEBUG)
-endif()
-
-if (USE_OPENMP)
-target_link_libraries(inversion
-    PRIVATE
-    OpenMP::OpenMP_CXX
-)
 endif()

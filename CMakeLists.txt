@@ -10,10 +10,8 @@ set(CMAKE_Fortran_FLAGS "-Wall -g -O3")
 option(ENABLE_DEBUG "Enable debug outputs" OFF)
 option(USE_OPENMP "with openmp" ON)
 
-# OpenMP
-if (USE_OPENMP)
-    find_package(OpenMP REQUIRED)
-endif()
+# MPI
+find_package(MPI REQUIRED COMPONENTS CXX)
 
 # Eigen
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)

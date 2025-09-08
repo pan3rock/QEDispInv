@@ -168,9 +168,6 @@ int DispersionCurves::update_fitness(const VectorXd &x) {
   SwEgn96 se(model, sh_);
 
   ArrayXd c_syn(f_obs_.size());
-#if defined(_OPENMP)
-#pragma omp parallel for
-#endif
   for (size_t i = 0; i < f_obs_.size(); ++i) {
     c_syn(i) = disp.search_mode(f_obs_[i], m_obs_[i]);
   }
