@@ -14,11 +14,17 @@ def main():
     parser.add_argument(
         "--step", action="store_true", help="to generate stepwise model"
     )
+    parser.add_argument(
+        "--no_randz",
+        action="store_true",
+        help="to generate stepwise model for inversion with rand_depth=false in the configure",
+    )
     parser.add_argument("-o", "--out")
     args = parser.parse_args()
     file_inv = args.file_inv
     file_out = args.out
     use_step_model = args.step
+    no_randz = args.no_randz
 
     fh5 = h5py.File(file_inv, "r")
     model_mean = fh5["model_mean"][()]
@@ -26,6 +32,8 @@ def main():
 
     if use_step_model:
         model_mean = linear2step(model_mean)
+    elif no_randz:
+        model_mean = analyze_step(model_mean)
 
     for i in range(model_mean.shape[0]):
         line = model_mean[i, :]
@@ -45,6 +53,22 @@ def linear2step(model_mean):
         for i in range(2, 5):
             model2[j + 1, i] = model_mean[j + 1, i]
     model2[:, 0] = np.arange(nl) + 1
+    return model2
+
+
+def analyze_step(model_mean):
+    z = model_mean[:, 1]
+    vs = model_mean[:, 3]
+    ilines = [0]
+    for i in range(1, model_mean.shape[0]):
+        if abs(vs[i] - vs[ilines[-1]]) > 1.0e-5:
+            ilines.append(i)
+
+    model2 = []
+    for i in ilines:
+        model2.append(model_mean[i])
+    model2 = np.asarray(model2)
+    model2[:, 0] = np.arange(model2.shape[0]) + 1
     return model2
 
 
