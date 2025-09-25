@@ -12,6 +12,7 @@ nf = 1000
 #vs2model = "NearSurface"
 vs2model = "FixVpRho"
 model_ref = "mref.txt"
+mref_type = "linear"
 
 vs_width = 0.7
 lambda = 1.0e-2
@@ -23,6 +24,7 @@ rand_depth = true
 rand_vs = false
 zmax = 0.025
 
+fix_wavelen = false
 r0 = 0.5
 rmin = 1.0
 rmax = 1.5

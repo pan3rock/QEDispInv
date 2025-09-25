@@ -8,3 +8,27 @@ fmin = 0.1
 fmax = 100.0
 nf = 1000
 
+[inversion]
+vs2model = "FixVpRho"
+model_ref = "model_init.txt"
+mref_type = "step"
+
+vs_width = 0.4
+lambda = 1.0e-1
+reg_type = 2
+
+num_init = 50
+num_noise = 1
+
+rand_depth = false
+rand_vs = true
+dintv_min = 0.002
+zmax = 0.06
+
+fix_wavelen = false
+r0 = 0.8
+rmin = 1.0
+rmax = 1.5
+
+sigma = [0.02, 0.04, 0.04, 0.04]
+weight = [4.0, 1.0, 1.0, 1.0]

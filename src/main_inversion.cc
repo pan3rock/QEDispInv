@@ -166,6 +166,7 @@ int main(int argc, char *argv[]) {
 
   if (file_mref == "")
     file_mref = toml::find<std::string>(conf_inv, "model_ref");
+  const auto mref_type = toml::find<std::string>(conf_inv, "mref_type");
   auto vs2model = toml::find<std::string>(conf_inv, "vs2model");
   const auto vs_width = toml::find<double>(conf_inv, "vs_width");
   const auto lamb_vs = toml::find<double>(conf_inv, "lambda");
@@ -179,15 +180,15 @@ int main(int argc, char *argv[]) {
                  [](unsigned char c) { return std::tolower(c); });
   std::shared_ptr<Vs2Model> pmodel;
   if (vs2model == "nearsurface") {
-    pmodel = std::make_shared<NearSurface>(model_ref);
+    pmodel = std::make_shared<NearSurface>(model_ref, mref_type);
     const auto vp2vs = toml::find<double>(conf_inv, "vp2vs");
     pmodel->set_param({vp2vs});
   } else if (vs2model == "gardner") {
-    pmodel = std::make_shared<Gardner>(model_ref);
+    pmodel = std::make_shared<Gardner>(model_ref, mref_type);
   } else if (vs2model == "fixvprho") {
-    pmodel = std::make_shared<FixVpRho>(model_ref);
+    pmodel = std::make_shared<FixVpRho>(model_ref, mref_type);
   } else if (vs2model == "brocher05") {
-    pmodel = std::make_shared<Brocher05>(model_ref);
+    pmodel = std::make_shared<Brocher05>(model_ref, mref_type);
   } else {
     if (world_rank == 0) {
       std::string msg =

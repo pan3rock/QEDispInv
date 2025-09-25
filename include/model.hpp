@@ -3,10 +3,12 @@
 
 #include <Eigen/Dense>
 #include <map>
+#include <string>
 
 class Vs2Model {
 public:
-  Vs2Model(const Eigen::Ref<const Eigen::ArrayXXd> model);
+  Vs2Model(const Eigen::Ref<const Eigen::ArrayXXd> model,
+           const std::string &mref_type);
   Vs2Model() {}
   virtual Eigen::ArrayXXd generate(const Eigen::ArrayXd &z,
                                    const Eigen::ArrayXd &vs) = 0;
@@ -21,6 +23,7 @@ public:
 protected:
   Eigen::ArrayXd z2interpdepth(const Eigen::ArrayXd &z);
   Eigen::ArrayXd z_, rho_, vs_, vp_;
+  const std::string mref_type_;
 };
 
 class FixVpRho : public Vs2Model {

@@ -20,9 +20,9 @@ using namespace Eigen;
 using Dict = std::map<std::string, Eigen::ArrayXd>;
 
 namespace {
-Eigen::ArrayXd interp1d(const Eigen::ArrayXd &x_old,
-                        const Eigen::ArrayXd &y_old,
-                        const Eigen::ArrayXd &x_new) {
+Eigen::ArrayXd interp_linear(const Eigen::ArrayXd &x_old,
+                             const Eigen::ArrayXd &y_old,
+                             const Eigen::ArrayXd &x_new) {
   const Eigen::Index n_old = x_old.size();
   assert(n_old >= 2 && "x_old must contain at least 2 points");
   assert(y_old.size() == n_old && "x_old and y_old must be the same size");
@@ -60,17 +60,30 @@ Eigen::ArrayXd interp1d(const Eigen::ArrayXd &x_old,
 
   return y_new;
 }
+
+Eigen::ArrayXd interp_step(const Eigen::ArrayXd &x_old,
+                           const Eigen::ArrayXd &y_old,
+                           const Eigen::ArrayXd &x_new) {
+  std::vector<double> y_new;
+  for (int i = 0; i < x_new.rows(); ++i) {
+    size_t idx = std::upper_bound(x_old.begin(), x_old.end(), x_new(i)) -
+                 x_old.begin() - 1;
+    y_new.push_back(y_old(idx));
+  }
+  ArrayXd y_new_a = Map<ArrayXd>(y_new.data(), y_new.size());
+  return y_new_a;
+}
 } // namespace
 
-Vs2Model::Vs2Model(const Eigen::Ref<const Eigen::ArrayXXd> model)
+Vs2Model::Vs2Model(const Eigen::Ref<const Eigen::ArrayXXd> model,
+                   const std::string &mref_type)
     : z_(model.col(1)), rho_(model.col(2)), vs_(model.col(3)),
-      vp_(model.col(4)) {}
+      vp_(model.col(4)), mref_type_(mref_type) {}
 
 Eigen::ArrayXd Vs2Model::z2interpdepth(const Eigen::ArrayXd &z) {
   const int nl = z.rows();
   ArrayXd dep(nl);
-  dep(0) = 0.0;
-  for (int i = 1; i < nl - 1; ++i) {
+  for (int i = 0; i < nl - 1; ++i) {
     dep(i) = (z(i) + z(i + 1)) / 2.0;
   }
   dep(nl - 1) = z(nl - 1);
@@ -79,7 +92,11 @@ Eigen::ArrayXd Vs2Model::z2interpdepth(const Eigen::ArrayXd &z) {
 
 Eigen::ArrayXd Vs2Model::interp_vs(const Eigen::ArrayXd &z) {
   ArrayXd dep = z2interpdepth(z);
-  return interp1d(z_, vs_, dep);
+  if (mref_type_ == "linear") {
+    return interp_linear(z_, vs_, dep);
+  } else {
+    return interp_step(z_, vs_, dep);
+  }
 }
 
 void Vs2Model::get_vs_limits(const Eigen::ArrayXd &z, double vs_width,
@@ -102,9 +119,15 @@ Eigen::ArrayXXd FixVpRho::generate(const Eigen::ArrayXd &z,
   ArrayXXd model(nl, 5);
   model.col(0) = ArrayXd::LinSpaced(nl, 1, nl);
   model.col(1) = z;
-  model.col(2) = interp1d(z_, rho_, dep);
   model.col(3) = vs;
-  model.col(4) = interp1d(z_, vp_, dep);
+  if (mref_type_ == "linear") {
+    model.col(2) = interp_linear(z_, rho_, dep);
+    model.col(4) = interp_linear(z_, vp_, dep);
+
+  } else {
+    model.col(2) = interp_step(z_, rho_, dep);
+    model.col(4) = interp_step(z_, vp_, dep);
+  }
   return model;
 }
 
@@ -126,7 +149,12 @@ void FixVpRho::get_vs_limits(const Eigen::ArrayXd &z, double vs_width,
                              Eigen::ArrayXd &ub) {
   vs_ref = interp_vs(z);
   ArrayXd dep = z2interpdepth(z);
-  ArrayXd vp_ref = interp1d(z_, vp_, dep);
+  ArrayXd vp_ref;
+  if (mref_type_ == "linear") {
+    vp_ref = interp_linear(z_, vp_, dep);
+  } else {
+    vp_ref = interp_step(z_, vp_, dep);
+  }
   ArrayXd vs_min = vs_ref - vs_width / 2.0;
   ArrayXd vs_max = vs_ref + vs_width / 2.0;
   double tiny = 1.0e-2;

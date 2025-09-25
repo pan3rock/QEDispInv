@@ -11,6 +11,7 @@ nf = 1000
 [inversion]
 vs2model = "brocher05"
 model_ref = "mref.txt"
+mref_type = "linear"
 
 vs_width = 1.2
 lambda = 1.0e-1
@@ -22,6 +23,7 @@ rand_depth = true
 rand_vs = false
 zmax = 120.0
 
+fix_wavelen = false
 r0 = 0.8
 rmin = 1.0
 rmax = 1.5
