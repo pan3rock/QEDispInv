@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+import argparse
+import h5py
+import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 params = {
@@ -10,19 +14,13 @@ params = {
     "font.family": "serif",
 }
 plt.rcParams.update(params)
-import argparse
-import h5py
-import numpy as np
-import matplotlib as mpl
 
 
 def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    parser.add_argument(
-        "file_ker", help="filename of computed sensitivity kernel"
-    )
+    parser.add_argument("file_ker", help="filename of computed sensitivity kernel")
     parser.add_argument(
         "--comp", default="vs", help="component of kernel (vp, vs, rho)"
     )
@@ -36,21 +34,15 @@ def main():
     parser.add_argument(
         "--plot_disp", action="store_true", help="show dispersion curves"
     )
-    parser.add_argument(
-        "--show_cb", action="store_true", help="show the colorbar"
-    )
+    parser.add_argument("--show_cb", action="store_true", help="show the colorbar")
     parser.add_argument("--cmin", type=float)
     parser.add_argument("--cmax", type=float)
     parser.add_argument("--fmin", type=float)
     parser.add_argument("--fmax", type=float)
     parser.add_argument("--zmax", type=float)
     parser.add_argument("--vmax", type=float)
-    parser.add_argument(
-        "--unit_m", action="store_true", help="use the unit of meter"
-    )
-    parser.add_argument(
-        "--sum", action="store_true", help="sum along the frequency"
-    )
+    parser.add_argument("--unit_m", action="store_true", help="use the unit of meter")
+    parser.add_argument("--sum", action="store_true", help="sum along the frequency")
     parser.add_argument(
         "--nolast", action="store_true", help="without showing the last layer"
     )
@@ -80,6 +72,25 @@ def main():
     z = fh5["z"][()]
     fh5.close()
 
+    if zmax is not None and zmax < z.max():
+        idx = z <= zmax
+        z = z[idx]
+        kvp = kvp[idx, :]
+        kvs = kvs[idx, :]
+        krho = krho[idx, :]
+    if fmin is not None:
+        idx = disp[:, 0] >= fmin
+        disp = disp[idx, :]
+        kvp = kvp[:, idx]
+        kvs = kvs[:, idx]
+        krho = krho[:, idx]
+    if fmax is not None:
+        idx = disp[:, 0] <= fmax
+        disp = disp[idx, :]
+        kvp = kvp[:, idx]
+        kvs = kvs[:, idx]
+        krho = krho[:, idx]
+
     if comp_show == "vs":
         var_show = kvs
         label = "kvs"
@@ -96,7 +107,6 @@ def main():
         raise ValueError("invalid comp")
 
     if unit_m:
-        cs *= 1.0e3
         z *= 1.0e3
         unit = "m"
     else:
