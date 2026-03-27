@@ -30,12 +30,12 @@ Typically, installing GCC will also install gfortran at the same time.
 
 ### 2. Required Libraries
 
-#### OpenMP
+#### OpenMPI
 
-- **Ubuntu/Debian**: `sudo apt-get install libomp-dev`
-- **Fedora/RHEL**: `sudo dnf install libomp-devel`
-- **Arch Linux**: `sudo pacman -S openmp`
-- **macOS (Homebrew)**: `brew install libomp`
+- **Ubuntu/Debian**: `sudo apt-get install libopenmpi-dev`
+- **Fedora/RHEL**: `sudo dnf install openmpi`
+- **Arch Linux**: `sudo pacman -S openmpi`
+- **macOS (Homebrew)**: `brew install open-mpi`
 
 #### Eigen3
 
@@ -95,6 +95,52 @@ After successful build, verify the command:
 ```
 
 If the program displays a help message, the installation was successful.
+
+### MPI Verification
+
+Verify your MPI installation is working correctly:
+
+```bash
+# Check MPI version
+mpirun --version
+mpiexec --version
+
+# Test MPI execution with 2 processes
+mpirun -n 2 ../bin/inversion -h
+```
+
+## MPI Runtime Usage
+
+The `inversion` executable uses MPI for parallel execution across multiple processes. Only the `inversion` tool requires MPI; `forward` and `secfunc` run serially.
+
+### Running with MPI
+
+To run the inversion with multiple MPI processes:
+
+```bash
+# Basic syntax
+mpirun -n <num_processes> ./bin/inversion [options]
+
+# Example: Run with 4 processes (1 master + 3 workers)
+mpirun -n 4 ./bin/inversion -c config.toml -d data.txt -o inv.h5
+```
+
+### Performance Recommendations
+
+- **Number of processes**: Use `min(available_cores, num_init/2)` for optimal performance
+  - The `num_init` parameter in `config.toml` controls the total number of parallel tasks
+  - Total tasks = `num_init × num_noise`
+  - Each worker process handles one initial model at a time
+
+- **Process roles**:
+  - **Rank 0 (Master)**: Coordinates tasks, aggregates results
+  - **Rank 1+ (Workers)**: Perform inversion computations
+
+- **Example**: If you have 8 CPU cores and `num_init = 50` in your config:
+  ```bash
+  # Use 4 processes (leaves cores for system and master coordination)
+  mpirun -n 4 ./bin/inversion -c config.toml -d data.txt
+  ```
 
 ## Python Libraries Installation
 

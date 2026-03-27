@@ -11,7 +11,8 @@ complex geological models.
 ## Key Features
 
 - **Forward Modeling**: Implements the quadratic extrema interpolation method for accurate and efficient dispersion curve computation, specifically optimized to resolve mode-kissing zones in models with LVLs. This method significantly reduces root omission rates compared to conventional approaches (e.g., CPS) while achieving substantial speed improvements ($12.6\times$ for full-mode computation and $17.4\times$ for fundamental-mode calculation in benchmark tests).
-- **Inversion Framework**: Incorporates wavelength-constrained layering schemes that adapt to the depth-dependent resolution of surface wave data, combined with depth-zoned empirical relationships for deriving P-wave velocity and density from shear-wave velocity. The inversion process utilizes the L-BFGS-B algorithm, with statistical aggregation of results from multiple initial models to address non-uniqueness.
+- **Inversion Framework**: Incorporates wavelength-constrained layering schemes that adapt to the depth-dependent resolution of surface wave data, combined with depth-zoned empirical relationships for deriving P-wave velocity and density from shear-wave velocity. The inversion process utilizes the L-BFGS-B algorithm with **MPI-based parallel execution** across multiple initial models, with statistical aggregation of results to address non-uniqueness.
+- **Parallel Computing**: MPI-parallelized inversion for distributed-memory systems, enabling efficient scaling across multiple CPU cores for large-scale parameter studies with multiple initial models and noise realizations.
 - **Comprehensive Workflow**: Supports both forward computation (dispersion curve generation) and inversion (subsurface structure recovery), validated through numerical simulations (near-surface and crustal LVL models) and real data applications (Mirandola site and USArray).
 
 ## Installation
@@ -24,7 +25,7 @@ cd QEDispInv
 git submodule update --init
 ```
 
-Please refer to the [`Install`](doc/INSTALL.md) document for compilation instructions and dependencies.
+**Note**: This branch requires an OpenMPI installation for MPI-parallelized inversion. Please refer to the [`Install`](doc/INSTALL.md) document for detailed MPI setup instructions, compilation steps, and dependencies.
 
 ## Tutorial
 
@@ -46,7 +47,7 @@ Detailed usage examples and parameter specifications are available in the [`Tuto
 
 If you use QEDispInv in your research, please cite this work as follows:
 
-- Pan, L., & Chen, X. (2025). Surface wave dispersion curve computation and inversion: A framework integrating quadratic extrema interpolation and randomized layering with multiple initial models. ESS Open Archive. https://doi.org/10.22541/essoar.175395718.82291260/v1
+- Pan, L., Wang, J., & Chen, X. (2026). Surface wave dispersion curve computation and inversion: A framework integrating quadratic extrema interpolation and randomized layering with multiple initial models. Bulletin of the Seismological Society of America, (Newly Published). https://doi.org/10.1785/0120250207 
 - Pan, L., & Chen, X. (2025). Efficient Computation of Dispersion Curves in Low‐Velocity‐Layered Half‐Spaces. Bulletin of the Seismological Society of America, 115 (4), 1381–1391. https://doi.org/10.1785/0120250003
 - Pan, L., Chen, X., Wang, J., Yang, Z., & Zhang, D. (2019). Sensitivity analysis of dispersion curves of Rayleigh waves with fundamental and higher modes. Geophysical Journal International, 216(2), 1276-1303. https://doi.org/10.1093/gji/ggy479
 

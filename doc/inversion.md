@@ -40,6 +40,8 @@ The `[inversion]` block in `config.toml` (as shown in the figure) contains criti
    - `num_init = 100`: Number of randomized initial models to explore, reducing dependence on the starting model.
    - `num_noise = 1`: Number of noise realizations added to data for uncertainty analysis.
 
+   **Note**: The total number of parallel tasks = `num_init × num_noise`. Higher values of `num_init` benefit more from MPI parallelization, as each task is distributed across available worker processes.
+
 7. **Randomization (`rand_depth`, `rand_vs`)**
 
    - `rand_depth = true`: Enables random variation of layer depths in initial models.
@@ -152,12 +154,42 @@ Once all input files are prepared, you can proceed with the inversion and analyz
 
 Run the inversion executable, specifying the observed dispersion data file with the `-d` flag:
 
+##### 1.1 MPI Parallel Execution
+
+The `inversion` tool uses MPI for parallel execution across multiple processes, implementing a master-worker architecture:
+
+- **Master (rank 0)**: Distributes tasks, collects results, performs post-processing
+- **Workers (rank > 0)**: Receive tasks, perform inversions, send results back
+
+**Execution Examples**:
+
 ```bash
 cd demo/syn-nearsurface
+
+# Single process (no MPI parallelization)
 ../../bin/inversion -d data.txt
+
+# Parallel with 4 processes (1 master + 3 workers)
+mpirun -n 4 ../../bin/inversion -d data.txt
+
+# Parallel using all available cores (leave one for system)
+mpirun -n $(($(nproc)-1)) ../../bin/inversion -d data.txt
 ```
 
-A progress bar will appear in the terminal, indicating the status of the inversion (e.g., initial model generation, optimization iterations). Once the progress bar completes, the inversion finishes, and results are saved to `inv.h5`—this HDF5 file contains all inverted models, misfit values, and auxiliary data.
+**Performance Guidance**:
+
+- The total number of parallel tasks is determined by `num_init × num_noise` in your `config.toml`
+- Each worker processes one initial model at a time
+- Optimal number of processes = `min(available_cores, total_tasks/2)`
+- Higher `num_init` values benefit more from MPI parallelization
+
+**Example**: If your config has `num_init = 50` and `num_noise = 1` (50 total tasks), and you have 8 CPU cores:
+```bash
+# Use 4 processes (good balance between parallelization and overhead)
+mpirun -n 4 ../../bin/inversion -d data.txt
+```
+
+Once the inversion completes, results are saved to `inv.h5`—this HDF5 file contains all inverted models, misfit values, and auxiliary data.
 
 #### 2. **Visualizing Results with `plot_inv.py`**
 
