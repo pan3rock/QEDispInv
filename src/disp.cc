@@ -77,9 +77,19 @@ Dispersion::Dispersion(const Eigen::Ref<const Eigen::ArrayXXd> model, bool sh)
       vs_(model.col(3)), vp_(model.col(4)), sh_(sh),
       itop_(model(0, 3) == 0 ? 1 : 0),
       sf_(std::make_unique<SecularFunction>(model, sh)) {
-  vs0_ = vs_(0);
-  vp0_ = vp_(0);
-  vs_min_ = vs_.minCoeff();
+  // Skip water layer, use solid top layer velocity to calculate Rayleigh wave
+  // reference velocity
+  vs0_ = vs_(itop_);
+  vp0_ = vp_(itop_);
+
+  // Minimum Vs in solid layers
+  vs_min_ = vs_.tail(nl_ - itop_).minCoeff();
+  // For water-bearing layers, dispersion root (Scholte wave) phase velocity may
+  // be lower than solid Vs, limited by water layer Vp
+  if (itop_ == 1 && !sh_) {
+    vs_min_ = std::min(vs_min_, vp_(0));
+  }
+
   vs_max_ = vs_.maxCoeff();
   vs_hf_ = vs_(nl_ - 1);
   rayv_ = evaluate_rayleigh_velocity();
@@ -249,13 +259,22 @@ std::vector<double> Dispersion::search(double f, int num_mode) const {
   auto find_intv = find_coarse_intv(f, num_mode);
   // auto find_intv = find_coarse_intv_raw(f, num_mode);
 
+  // Local tolerance specifically for filtering "false twin roots"
+  // This value is much larger than the underlying toms748 computation tolerance
+  // (1e-12), and much smaller than the real mode-kissing spacing (1e-4)
+  const double dedup_tol = 1.0e-7;
+
   std::vector<double> find;
   for (auto it = find_intv.cbegin(); it != find_intv.end(); ++it) {
     double c1 = it->first;
     double c2 = it->second;
     double root = toms748(func, c1, c2);
     if (!std::isnan(root))
-      find.push_back(root);
+      // ignore duplicate roots that may be caused by numerical noise or
+      // adjacent intervals
+      if (find.empty() || std::abs(root - find.back()) > dedup_tol) {
+        find.push_back(root);
+      }
   }
 
   if (int(find.size()) > num_mode) {
