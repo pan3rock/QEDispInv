@@ -95,14 +95,16 @@ def main():
     else:
         raise ValueError("invalid comp")
 
+    # Set unit label (for main path, show_sum sets it separately)
     if unit_m:
-        cs *= 1.0e3
-        z *= 1.0e3
         unit = "m"
     else:
         unit = "km"
 
     if show_sum:
+        # Apply z conversion for show_sum path
+        if unit_m:
+            z = z * 1.0e3
         plot_sum(z, var_show, disp, unit, zmax)
         return
 
@@ -123,6 +125,11 @@ def main():
     var_show = var_show[:, idx]
     freqs = disp[:, 0]
     cs = disp[:, 1]
+
+    # Apply unit conversion after cs is extracted
+    if unit_m:
+        z = z * 1.0e3
+        cs = cs * 1.0e3
 
     fig, ax = plt.subplots(layout="constrained")
     cmap = "seismic"
