@@ -134,6 +134,10 @@ def main():
     freqs = disp[:, 0]
     cs = disp[:, 1]
 
+    # Apply unit conversion after cs is extracted
+    if unit_m:
+        cs = cs * 1.0e3
+
     fig, ax = plt.subplots(layout="constrained")
     cmap = "seismic"
     ax.pcolormesh(
