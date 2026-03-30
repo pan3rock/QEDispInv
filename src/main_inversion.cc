@@ -166,7 +166,8 @@ int main(int argc, char *argv[]) {
 
   if (file_mref == "")
     file_mref = toml::find<std::string>(conf_inv, "model_ref");
-  const auto mref_type = toml::find<std::string>(conf_inv, "mref_type");
+  const auto mref_type =
+      toml::find_or<std::string>(conf_inv, "mref_type", "linear");
   auto vs2model = toml::find<std::string>(conf_inv, "vs2model");
   const auto vs_width = toml::find<double>(conf_inv, "vs_width");
   const auto lamb_vs = toml::find<double>(conf_inv, "lambda");
@@ -212,7 +213,7 @@ int main(int argc, char *argv[]) {
   const auto r0 = toml::find<double>(conf_inv, "r0");
   const auto rmin = toml::find<double>(conf_inv, "rmin");
   const auto rmax = toml::find<double>(conf_inv, "rmax");
-  const auto fix_wavelen = toml::find<bool>(conf_inv, "fix_wavelen");
+  const auto fix_wavelen = toml::find_or<bool>(conf_inv, "fix_wavelen", false);
 
   Data data(data_input);
   double lmin, lmax;
