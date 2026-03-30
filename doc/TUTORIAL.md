@@ -4,6 +4,8 @@ To facilitate users in quickly understanding and utilizing the code, three examp
 below, each demonstrating the application of the framework in different scenarios based on the
 content of the manuscript.
 
+> **⚠️ Note on MPI Execution**: If you have conda/mamba installed, `mpirun` may default to the conda environment's MPI instead of the system MPI. This causes errors or hanging. Use `/usr/bin/mpirun` explicitly if you encounter issues. See [INSTALL.md](./INSTALL.md#important-mpi-environment-compatibility) for details.
+
 ## Example 1: [Model 1](../demo/lvl-l4) (Four-Layer Model with a Low-Velocity Layer)
 
 Model 1 is a four-layer numerical model designed to address the ``mode-kissing’’ phenomenon, where adjacent dispersion curve branches converge closely in media containing low-velocity layers (LVLs). This model, with parameters detailed in Table 1, helps illustrate the limitations of conventional root-finding methods in detecting critical roots at mode-kissing zones. By applying the proposed quadratic extrema interpolation method, supplementary sampling points are strategically added based on the dispersion function’s morphology, resolving previously missed roots and ensuring complete dispersion curve computation. This example highlights the method’s efficiency in handling LVL-induced complexities, which is crucial for accurate subsequent inversion.

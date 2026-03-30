@@ -113,6 +113,43 @@ mpirun -n 2 ../bin/inversion -h
 
 The `inversion` executable uses MPI for parallel execution across multiple processes. Only the `inversion` tool requires MPI; `forward` and `secfunc` run serially.
 
+### Important: MPI Environment Compatibility
+
+**⚠️ Common Issue: Multiple MPI Installations**
+
+If you have **conda/mamba** installed, your `mpirun` may default to the conda environment's MPI instead of the system MPI used during compilation. This causes runtime errors or the program appearing to hang without output.
+
+**Symptoms**:
+- Multiple copies of output appearing (e.g., "lmin=..." printed twice)
+- Program hangs without producing results
+- Error: "MPI processes failed to start"
+- Segmentation fault during execution
+
+**Solution**: Always use the system MPI that matches your compiled libraries:
+
+```bash
+# 1. Check which mpirun is being used
+which mpirun
+
+# 2. If it points to conda/miniconda (e.g., ~/miniconda3/bin/mpirun),
+#    use the system mpirun explicitly instead:
+/usr/bin/mpirun -n 4 ./bin/inversion -c config.toml -d data.txt
+
+# 3. Or temporarily remove conda from PATH:
+export PATH=$(echo $PATH | tr ':' '\n' | grep -v conda | tr '\n' ':')
+mpirun -n 4 ./bin/inversion -c config.toml -d data.txt
+```
+
+**Verification**:
+
+```bash
+# Ensure the program links to the correct MPI libraries
+ldd ./bin/inversion | grep mpi
+
+# Should show your system MPI path (e.g., /usr/lib/x86_64-linux-gnu/libmpi.so.40)
+# NOT a conda path (e.g., ~/miniconda3/lib/libmpi.so)
+```
+
 ### Running with MPI
 
 To run the inversion with multiple MPI processes:
