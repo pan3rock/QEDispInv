@@ -203,6 +203,9 @@ int main(int argc, char *argv[]) {
 
   LBFGSBParam<double> param;
   param.max_iterations = 100;
+  param.epsilon = 1e-4;
+  param.past = 5;
+  param.delta = 1e-6;
   LBFGSBSolver<double> solver(param);
 
   const auto num_init = toml::find<int>(conf_inv, "num_init");
