@@ -171,7 +171,8 @@ int main(int argc, char *argv[]) {
   auto vs2model = toml::find<std::string>(conf_inv, "vs2model");
   const auto vs_width = toml::find<double>(conf_inv, "vs_width");
   const auto lamb_vs = toml::find<double>(conf_inv, "lambda");
-  const auto rtype = toml::find<int>(conf_inv, "reg_type");
+  const auto reg_type = toml::find<std::string>(conf_inv, "reg_type");
+  const auto use_An2020 = toml::find_or<bool>(conf_inv, "use_An2020", true);
   const auto weight = toml::find<std::vector<double>>(conf_inv, "weight");
 
   ArrayXXd model_ref = loadtxt(file_mref);
@@ -492,7 +493,7 @@ int main(int argc, char *argv[]) {
       auto data_resampled = data_noise[i_d];
       ArrayXd z_model = z_init[i_m];
       lbfgspp::DispersionCurves prob(z_model, vs_ref[i_m], pmodel, weight,
-                                     lamb_vs, sh, rtype);
+                                     lamb_vs, sh, reg_type, use_An2020);
       prob.load_data(data_resampled);
 
       VectorXd x = vs_init[i_m];

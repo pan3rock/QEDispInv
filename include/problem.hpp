@@ -33,10 +33,11 @@ public:
                    const Eigen::VectorXd &vs_ref,
                    std::shared_ptr<Vs2Model> vs2model,
                    const std::vector<double> &weight, double lamb_vs, bool sh,
-                   int rtype);
-  // regularization:
-  // rtype == 1: d/dz
-  // rtype == 2: An2020
+                   const std::string &reg_type, bool use_An2020);
+  // regularization reg_type:
+  // "smooth": α ‖L Vs‖²  (use_An2020 controls adaptive weights)
+  // "damp":   β ‖Vs - Vs_ref‖²
+  // "tv":     α ‖L Vs‖₁  (Total Variation)
   ~DispersionCurves();
   void load_data(Data &data);
   int update_fitness(const Eigen::VectorXd &vs);
@@ -53,16 +54,21 @@ private:
 
   void update_matM_An2020();
   void update_matM_tr1();
+  void setup_matL();
 
   const Eigen::VectorXd z_model_, vs_ref_;
   const int nx_;
   std::shared_ptr<Vs2Model> vs2model_;
   Eigen::ArrayXd weight_;
   Eigen::MatrixXd matM_;
+  Eigen::MatrixXd matL_;
   const double lamb_vs_;
   const bool sh_;
   const int nl_;
   const bool water_;
+  const std::string reg_type_;
+  const bool use_An2020_;
+  static constexpr double tv_eps_ = 1.0e-8;
   Data *data_;
   std::vector<double> f_obs_, c_obs_;
   std::vector<int> m_obs_;

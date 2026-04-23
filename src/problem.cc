@@ -90,18 +90,27 @@ DispersionCurves::DispersionCurves(const VectorXd &z_model,
                                    const VectorXd &vs_ref,
                                    std::shared_ptr<Vs2Model> vs2model,
                                    const std::vector<double> &weight,
-                                   double lamb_vs, bool sh, int rtype)
+                                   double lamb_vs, bool sh,
+                                   const std::string &reg_type,
+                                   bool use_An2020)
     : z_model_(z_model), vs_ref_(vs_ref), nx_(z_model.rows()),
       vs2model_(vs2model), weight_(ArrayXd::Zero(20)),
-      matM_(MatrixXd::Zero(nx_, nx_)), lamb_vs_(lamb_vs), sh_(sh),
-      nl_(z_model.rows()), water_(vs_ref(0) == 0.0) {
+      matM_(MatrixXd::Zero(nx_, nx_)),
+      matL_(MatrixXd::Zero(nx_ > 0 ? nx_ - 1 : 0, nx_)),
+      lamb_vs_(lamb_vs), sh_(sh), nl_(z_model.rows()),
+      water_(vs_ref(0) == 0.0), reg_type_(reg_type),
+      use_An2020_(use_An2020) {
   for (size_t i = 0; i < weight.size(); ++i) {
     weight_(i) = weight[i];
   }
-  if (rtype == 1) {
-    update_matM_tr1();
-  } else if (rtype == 2) {
-    update_matM_An2020();
+  if (reg_type_ == "smooth") {
+    if (use_An2020_) {
+      update_matM_An2020();
+    } else {
+      update_matM_tr1();
+    }
+  } else if (reg_type_ == "tv") {
+    setup_matL();
   }
 }
 
@@ -128,6 +137,14 @@ void DispersionCurves::update_matM_tr1() {
     matL(i, i + 1) = -1.0;
   }
   matM_ = lamb_vs_ * matL.transpose() * matL;
+}
+
+void DispersionCurves::setup_matL() {
+  matL_ = MatrixXd::Zero(nl_ - 1, nl_);
+  for (int i = 0; i < nl_ - 1; ++i) {
+    matL_(i, i) = 1.0;
+    matL_(i, i + 1) = -1.0;
+  }
 }
 
 void DispersionCurves::load_data(Data &data) {
@@ -252,14 +269,37 @@ double DispersionCurves::operator()(const Eigen::VectorXd &x,
 }
 
 double DispersionCurves::f_reg(const Eigen::VectorXd &vs) {
-  auto mat = (vs - vs_ref_).transpose() * matM_ * (vs - vs_ref_);
-  double f = 1.0 / nx_ * mat(0, 0);
-  return f;
+  if (reg_type_ == "smooth") {
+    auto mat = vs.transpose() * matM_ * vs;
+    return 1.0 / nx_ * mat(0, 0);
+  } else if (reg_type_ == "damp") {
+    auto diff = vs - vs_ref_;
+    return lamb_vs_ / nx_ * diff.squaredNorm();
+  } else if (reg_type_ == "tv") {
+    VectorXd Lv = matL_ * vs;
+    double sum = 0.0;
+    for (int i = 0; i < Lv.size(); ++i) {
+      sum += std::sqrt(Lv(i) * Lv(i) + tv_eps_);
+    }
+    return lamb_vs_ / nx_ * sum;
+  }
+  return 0.0;
 }
 
 Eigen::VectorXd DispersionCurves::g_reg(const Eigen::VectorXd &vs) {
-  VectorXd grad = 2.0 / nx_ * matM_ * (vs - vs_ref_);
-  return grad;
+  if (reg_type_ == "smooth") {
+    return 2.0 / nx_ * matM_ * vs;
+  } else if (reg_type_ == "damp") {
+    return 2.0 * lamb_vs_ / nx_ * (vs - vs_ref_);
+  } else if (reg_type_ == "tv") {
+    VectorXd Lv = matL_ * vs;
+    VectorXd w(Lv.size());
+    for (int i = 0; i < Lv.size(); ++i) {
+      w(i) = Lv(i) / std::sqrt(Lv(i) * Lv(i) + tv_eps_);
+    }
+    return lamb_vs_ / nx_ * matL_.transpose() * w;
+  }
+  return VectorXd::Zero(vs.size());
 }
 
 } // namespace lbfgspp
