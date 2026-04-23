@@ -2,9 +2,10 @@ cmake_minimum_required(VERSION 3.10.0)
 project(QEDispInv VERSION 1.0.0 LANGUAGES CXX Fortran)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-non-virtual-dtor")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -fPIC -ffp-contract=fast")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -ffp-contract=fast")
 set(CMAKE_Fortran_FLAGS "-Wall -g -O3")
 
 option(ENABLE_DEBUG "Enable debug outputs" OFF)
