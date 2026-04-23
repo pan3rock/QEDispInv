@@ -319,6 +319,7 @@ Eigen::ArrayXXd compute_hist2d(const std::vector<Eigen::ArrayXd> &z_inv,
 
   z_samples = ArrayXd::LinSpaced(num_hist, 0, zmax);
   vs_samples = ArrayXd::LinSpaced(num_hist, vsmin, vsmax);
+  vs_samples += dvs * 0.5;
 
   ArrayXXd hist2d = ArrayXXd::Zero(num_hist, num_hist);
   for (size_t n = 0; n < z_inv.size(); ++n) {
@@ -342,9 +343,18 @@ Eigen::ArrayXXd compute_hist2d(const std::vector<Eigen::ArrayXd> &z_inv,
         }
       }
 
-      while (i_z * dz <= zub) {
-        hist2d(i_z, i1_v) += f_val[n];
-        ++i_z;
+      if (i == nl - 1) {
+        // last layer: fill remaining bins to zmax
+        while (i_z < num_hist) {
+          hist2d(i_z, i1_v) += f_val[n];
+          ++i_z;
+        }
+      } else {
+        // use strict < so boundary bin belongs to the layer below
+        while (i_z * dz < zub) {
+          hist2d(i_z, i1_v) += f_val[n];
+          ++i_z;
+        }
       }
     }
   }

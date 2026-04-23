@@ -120,8 +120,8 @@ def plot_model(
 
     dx = vs_sample[1] - vs_sample[0]
     dy = z_sample[1] - z_sample[0]
-    x = vs_sample - dx / 2.0
-    y = z_sample - dy / 2.0
+    x = vs_sample
+    y = z_sample
 
     fig, ax = plt.subplots(layout="constrained")
     ax.pcolormesh(
