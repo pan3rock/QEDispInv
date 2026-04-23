@@ -29,11 +29,35 @@ The `[inversion]` block in `config.toml` (as shown in the figure) contains criti
 
 4. **Regularization Strength (`lambda`)**
 
-   - `lambda = 1.0e-2`: Controls the tradeoff between data fit and model smoothness. Smaller values prioritize fitting data (risk of overfitting), while larger values enforce smoother models.
+   - `lambda = 1.0e-2`: Controls the weight of the regularization term relative to data misfit. Smaller values prioritize fitting data (risk of overfitting), while larger values strengthen the regularization constraint. The physical meaning of this parameter depends on the chosen `reg_type`.
 
 5. **Regularization Type (`reg_type`)**
 
-   - `reg_type = 2`: Specifies the type of regularization (e.g., 1 = first-order Tikhonov regularization, 2 = An's (2020) adaptive first-order Tikhonov regularization), which penalizes rapid changes in model parameters.
+   - `reg_type = "smooth"`: Specifies the regularization strategy. Three modes are available, each suited to different geophysical scenarios:
+
+     | `reg_type` | Objective Term | Best For |
+     | ---------- | -------------- | -------- |
+     | `"smooth"` | $\alpha \|\mathbf{L} V_S\|^2$ | Conservative smooth trends when subsurface structure is unknown |
+     | `"damp"` | $\beta \|V_S - V_{S,\text{ref}}\|^2$ | Perturbation imaging around a well-known 3D background model |
+     | `"tv"` | $\alpha \|\mathbf{L} V_S\|_1$ | Sharp interface detection (e.g., bedrock in engineering geophysics) |
+
+     where $\mathbf{L}$ is the first-order finite-difference operator and $\alpha = \beta = $ `lambda`.
+
+   - **Smooth mode** (`"smooth"`): First-order Tikhonov regularization that penalizes velocity gradients. Use when you have no prior knowledge of the subsurface and want a conservative, smooth velocity profile. The optional parameter `use_An2020` (default: `true`) enables An et al.'s (2020) adaptive weighting, which relaxes smoothing at interfaces where velocity changes rapidly—set to `false` for uniform smoothing:
+     ```toml
+     reg_type = "smooth"
+     use_An2020 = false  # optional, default is true
+     ```
+
+   - **Damping mode** (`"damp"`): Zeroth-order Tikhonov regularization that penalizes deviation from the reference model. Use when you already have a reliable large-scale 3D background model (e.g., from tomography) and want to resolve only local perturbations. This mode is ideal for active–passive surface-wave fusion workflows:
+     ```toml
+     reg_type = "damp"
+     ```
+
+   - **Total Variation mode** (`"tv"`): L1-norm regularization of velocity gradients, which preserves sharp velocity contrasts while suppressing noise. Use for near-surface engineering applications where detecting discrete interfaces (e.g., bedrock surface, sediment–basement boundary) is the primary goal. The L1 norm is handled via a smoothed approximation $\sqrt{x^2 + \varepsilon}$ with $\varepsilon = 10^{-8}$:
+     ```toml
+     reg_type = "tv"
+     ```
 
 6. **Initial Model Exploration (`num_init`, `num_noise`)**
 
